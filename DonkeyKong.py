@@ -9,7 +9,10 @@ class DonkeyKong(QApplication):
         super().__init__(args)
 
         self.setApplicationName("Donkey Kong")
-        self.sceneManager = SceneManager()
+        self.sceneManager = SceneManager(self)
+
+    def close_game(self):
+        self.quit();
 
 
 # program entry point
