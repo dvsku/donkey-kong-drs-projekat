@@ -1,10 +1,7 @@
-from PyQt5.QtCore import Qt, QBasicTimer
+from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QGraphicsView
 from GameScenes import (MainMenu, Level1)
-
-WINDOW_WIDTH = 800
-WINDOW_HEIGHT = 600
-
+from constants import WINDOW_WIDTH, WINDOW_HEIGHT
 
 # used to control game scenes (main menu and levels)
 class SceneManager:

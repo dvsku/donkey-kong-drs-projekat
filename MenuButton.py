@@ -1,13 +1,7 @@
-from enum import Enum
 from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtGui import QPixmap, QImage
 from PyQt5.QtWidgets import QGraphicsPixmapItem, QGraphicsObject
-
-
-class State(Enum):
-    NONE = 0
-    NORMAL = 1
-    HIGHLIGHTED = 2
+from constants import State
 
 
 class Button(QGraphicsObject):

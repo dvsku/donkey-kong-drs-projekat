@@ -12,7 +12,7 @@ class DonkeyKong(QApplication):
         self.sceneManager = SceneManager(self)
 
     def close_game(self):
-        self.quit();
+        self.quit()
 
 
 # program entry point
