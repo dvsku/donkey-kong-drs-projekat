@@ -1,18 +1,9 @@
-from enum import Enum
-
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QBrush, QImage, QPixmap
 from PyQt5.QtWidgets import QGraphicsRectItem, QGraphicsPixmapItem
 from Scene import Scene
-from MenuButton import Button, State
-
-SCENE_WIDTH = 800
-SCENE_HEIGHT = 600
-
-
-class Direction(Enum):
-    UP = 1
-    DOWN = 2
+from MenuButton import Button
+from constants import SCENE_WIDTH, SCENE_HEIGHT, Direction, State
 
 
 class MainMenu(Scene):
@@ -20,22 +11,27 @@ class MainMenu(Scene):
         super().__init__()
         self.__parent__ = parent
 
-        self.background = QGraphicsRectItem()
-        self.background.setRect(-1, -1, SCENE_WIDTH + 2, SCENE_HEIGHT + 2)
-        self.background.setBrush(QBrush(Qt.black))
+        self.draw_background()
+
+        self.foreground = QGraphicsRectItem()
+        self.foreground.setZValue(2)
+        self.foreground.setRect(-1, -1, SCENE_WIDTH + 2, SCENE_HEIGHT + 2)
+        self.foreground.setBrush(QBrush(Qt.black))
 
         self.logo = QGraphicsPixmapItem()
         self.logo.setPixmap(QPixmap.fromImage(QImage("resources/logo.png")))
         self.logo.setPos((SCENE_WIDTH - 600) / 2, 50)
 
         self.buttons = [
-            Button(self.__parent__.load_level, 1, (SCENE_WIDTH - 250) / 2, SCENE_HEIGHT - 250, "resources/start-normal.png",
+            Button(self.__parent__.load_level, 1, (SCENE_WIDTH - 250) / 2, SCENE_HEIGHT - 250,
+                   "resources/start-normal.png",
                    "resources/start-highlighted.png", State.HIGHLIGHTED),
-            Button(self.__parent__.close_game, None, (SCENE_WIDTH - 200) / 2, SCENE_HEIGHT - 175, "resources/quit-normal.png",
+            Button(self.__parent__.close_game, None, (SCENE_WIDTH - 200) / 2, SCENE_HEIGHT - 175,
+                   "resources/quit-normal.png",
                    "resources/quit-highlighted.png", State.NORMAL)
         ]
 
-        self.addItem(self.background)
+        # self.addItem(self.foreground)
         self.addItem(self.logo)
         self.draw_menu_buttons()
 
@@ -85,16 +81,18 @@ class Level1(Scene):
     def __init__(self):
         super().__init__()
 
-        background = QGraphicsRectItem()
-        background.setRect(-1, -1, SCENE_WIDTH + 2, SCENE_HEIGHT + 2)
-        background.setBrush(QBrush(Qt.green))
-        self.addItem(background)
+        self.draw_background()
+        self.draw_grid()
+        self.toggle_grid()
 
     def update_scene(self):
         pass
 
     def keyPressEvent(self, event):
-        if not event.key() in self.keys_pressed:
+        if event.key() == Qt.Key_M:
+            self.toggle_grid()
+            return
+        elif not event.key() in self.keys_pressed:
             self.keys_pressed.add(event.key())
 
     def keyReleaseEvent(self, event):
