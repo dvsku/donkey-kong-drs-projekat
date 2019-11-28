@@ -1,6 +1,10 @@
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QBrush, QImage, QPixmap
 from PyQt5.QtWidgets import QGraphicsRectItem, QGraphicsPixmapItem
+
+from Person import Person
+from Platforma import Platforma
+from Princeza import Princeza
 from Scene import Scene
 from MenuButton import Button
 from constants import SCENE_WIDTH, SCENE_HEIGHT, Direction, State
@@ -84,6 +88,91 @@ class Level1(Scene):
         self.draw_background()
         self.draw_grid()
         self.toggle_grid()
+
+        # platforma
+        self.addItem(Platforma(0, 600 - 40))
+        self.addItem(Platforma(40, 600 - 40))
+        self.addItem(Platforma(80, 600 - 40))
+        self.addItem(Platforma(120, 600 - 40))
+        self.addItem(Platforma(160, 600 - 40))
+        self.addItem(Platforma(200, 600 - 40))
+        self.addItem(Platforma(240, 600 - 40))
+        self.addItem(Platforma(280, 600 - 40))
+        self.addItem(Platforma(320, 600 - 40))
+        self.addItem(Platforma(360, 600 - 40))
+        self.addItem(Platforma(400, 600 - 40))
+        self.addItem(Platforma(440, 600 - 40))
+        self.addItem(Platforma(480, 600 - 40))
+        self.addItem(Platforma(520, 600 - 40))
+        self.addItem(Platforma(560, 600 - 40))
+        self.addItem(Platforma(600, 600 - 40))
+        self.addItem(Platforma(640, 600 - 40))
+        self.addItem(Platforma(680, 600 - 40))
+        self.addItem(Platforma(720, 600 - 40))
+        self.addItem(Platforma(760, 600 - 40))
+        self.addItem(Platforma(800, 600 - 40))
+
+        self.addItem(Platforma(120, 600-120))
+        self.addItem(Platforma(160, 600 - 120))
+        self.addItem(Platforma(200, 600 - 120))
+        self.addItem(Platforma(240, 600 - 120))
+        self.addItem(Platforma(280, 600 - 120))
+        self.addItem(Platforma(440, 600 - 120))
+        self.addItem(Platforma(480, 600 - 120))
+        self.addItem(Platforma(520, 600 - 120))
+        self.addItem(Platforma(560, 600 - 120))
+        self.addItem(Platforma(600, 600 - 120))
+
+        self.addItem(Platforma(280, 600 - 200))
+        self.addItem(Platforma(320, 600 - 200))
+        self.addItem(Platforma(360, 600 - 200))
+        self.addItem(Platforma(400, 600 - 200))
+        self.addItem(Platforma(440, 600 - 200))
+        self.addItem(Platforma(600, 600 - 200))
+        self.addItem(Platforma(640, 600 - 200))
+        self.addItem(Platforma(680, 600 - 200))
+        self.addItem(Platforma(720, 600 - 200))
+        self.addItem(Platforma(760, 600 - 200))
+
+        self.addItem(Platforma(80, 600 - 280))
+        self.addItem(Platforma(120, 600 - 280))
+        self.addItem(Platforma(160, 600 - 280))
+        self.addItem(Platforma(200, 600 - 280))
+        self.addItem(Platforma(240, 600 - 280))
+        self.addItem(Platforma(280, 600 - 280))
+        self.addItem(Platforma(480, 600 - 280))
+        self.addItem(Platforma(520, 600 - 280))
+        self.addItem(Platforma(560, 600 - 280))
+        self.addItem(Platforma(600, 600 - 280))
+
+        self.addItem(Platforma(280, 600 - 360))
+        self.addItem(Platforma(320, 600 - 360))
+        self.addItem(Platforma(360, 600 - 360))
+        self.addItem(Platforma(400, 600 - 360))
+        self.addItem(Platforma(440, 600 - 360))
+        self.addItem(Platforma(480, 600 - 360))
+
+        self.addItem(Platforma(80, 600 - 440))
+        self.addItem(Platforma(120, 600 - 440))
+        self.addItem(Platforma(160, 600 - 440))
+        self.addItem(Platforma(200, 600 - 440))
+        self.addItem(Platforma(240, 600 - 440))
+        self.addItem(Platforma(280, 600 - 440))
+        self.addItem(Platforma(480, 600 - 440))
+        self.addItem(Platforma(520, 600 - 440))
+        self.addItem(Platforma(560, 600 - 440))
+        self.addItem(Platforma(600, 600 - 440))
+
+        self.addItem(Platforma(280, 600 - 520))
+        self.addItem(Platforma(320, 600 - 520))
+        self.addItem(Platforma(360, 600 - 520))
+        self.addItem(Platforma(400, 600 - 520))
+        self.addItem(Platforma(440, 600 - 520))
+        self.addItem(Platforma(480, 600 - 520))
+
+        self.addItem(Princeza(360, 600-535))
+
+        self.addItem(Person())
 
     def update_scene(self):
         pass
