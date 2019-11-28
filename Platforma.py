@@ -3,13 +3,10 @@ from PyQt5.QtWidgets import QGraphicsPixmapItem
 
 
 class Platforma(QGraphicsPixmapItem):
-    def __init__(self, x, y):
+    def __init__(self):
         super().__init__()
 
-        self.platforma = QGraphicsPixmapItem()
-        self.platforma.setPixmap(QPixmap.fromImage(QImage("resources/platforma.png")))
-
-        self.platforma.setPos(0, 600 - 15)
-
+        self.setPixmap(QPixmap("resources/platforma_dole.png"))
+        self.platforma = self.setPos(0, 600-40)
 
 
