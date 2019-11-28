@@ -11,5 +11,6 @@ class Barrel(QGraphicsRectItem):
         self.setBrush(QBrush(Qt.yellow))
 
     def goDown(self):
+        # ako dodje do 600 da nestane
 
-        self.moveBy(0,5)
+        self.moveBy(0, 5)

@@ -1,14 +1,13 @@
 from PyQt5.QtGui import QPixmap, QImage
-from PyQt5.QtWidgets import QGraphicsPixmapItem, QWidget
-from PyQt5.uic.properties import QtGui
+from PyQt5.QtWidgets import QGraphicsPixmapItem
 
 
 class Princeza(QGraphicsPixmapItem):
-    def __init__(self):
+    def __init__(self, x, y):
         super().__init__()
 
         self.setPixmap(QPixmap("resources/princeza.png"))
-        self.setPos(500, 600-575)
+        self.setPos(x, y)
 
 
 
