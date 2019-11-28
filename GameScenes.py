@@ -1,7 +1,9 @@
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QBrush, QImage, QPixmap
 from PyQt5.QtWidgets import QGraphicsRectItem, QGraphicsPixmapItem
-
+import random
+from Barrel import Barrel
+from Gorilla import Gorilla
 from Person import Person
 from Platforma import Platforma
 from Princeza import Princeza
@@ -88,7 +90,7 @@ class Level1(Scene):
         self.draw_background()
         self.draw_grid()
         self.toggle_grid()
-
+        self.curY = 0
         # platforma
         self.addItem(Platforma(0, 600 - 40))
         self.addItem(Platforma(40, 600 - 40))
@@ -174,8 +176,24 @@ class Level1(Scene):
 
         self.addItem(Person())
 
+        self.gorilla = Gorilla(385, 150)
+        self.addItem(self.gorilla)
+        self.barrel1 = Barrel(420, 230)
+        self.addItem(self.barrel1)
+        self.barrel2 = Barrel(420, 240)
+        self.addItem(self.barrel2)
+        self.barrel = Barrel(400, 220)
+        self.addItem(self.barrel)
+
     def update_scene(self):
-        pass
+       # pass
+       #fali logika za granice po x-osi
+        self.barrel.goDown()
+        if random.randint(1, 10) % 2 != 0:
+            self.gorilla.goLeft()
+        else:
+            self.gorilla.goRight()
+
 
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_M:
