@@ -1,16 +1,18 @@
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QGraphicsView
-from GameScenes import (MainMenu, Level1)
-from constants import WINDOW_WIDTH, WINDOW_HEIGHT
 
-# used to control game scenes (main menu and levels)
+from game.globals import WINDOW_WIDTH, WINDOW_HEIGHT
+from game.levels.Level_1 import Level1
+from game.levels.MainMenu import MainMenu
+
+
 class SceneManager:
     def __init__(self, parent):
         self.__parent__ = parent
         self.view = QGraphicsView()
         self.view.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.view.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        self.view.setFixedSize(WINDOW_WIDTH, WINDOW_HEIGHT)
+        self.view.setFixedSize(WINDOW_WIDTH + 3, WINDOW_HEIGHT + 3)
         self.view.show()
 
         self.load_main_menu()

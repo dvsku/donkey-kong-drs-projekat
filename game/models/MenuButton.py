@@ -1,7 +1,7 @@
 from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtGui import QPixmap, QImage
 from PyQt5.QtWidgets import QGraphicsPixmapItem, QGraphicsObject
-from constants import State
+from game.globals import State
 
 
 class Button(QGraphicsObject):
@@ -14,8 +14,8 @@ class Button(QGraphicsObject):
         self.func_param = func_param
         self.state_changed.connect(self.state_changed_handler)
 
-        self.normalImage = QPixmap.fromImage(QImage(normal))
-        self.highlightImage = QPixmap.fromImage(QImage(highlight))
+        self.normalImage = QPixmap(normal)
+        self.highlightImage = QPixmap(highlight)
 
         self.graphics_item = QGraphicsPixmapItem()
         self.graphics_item.setPos(x, y)

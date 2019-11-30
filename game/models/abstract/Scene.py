@@ -1,11 +1,9 @@
 from PyQt5.QtCore import QBasicTimer, Qt
-from PyQt5.QtGui import QPen, QColor, QBrush
-from PyQt5.QtWidgets import QGraphicsScene, QGraphicsRectItem
-from constants import SCENE_HEIGHT, SCENE_WIDTH, SCENE_GRID_BLOCK_WIDTH, \
+from PyQt5.QtGui import QPen, QColor, QBrush, QFont
+from PyQt5.QtWidgets import QGraphicsScene, QGraphicsRectItem, QGraphicsTextItem
+from game.globals import SCENE_HEIGHT, SCENE_WIDTH, SCENE_GRID_BLOCK_WIDTH, \
     SCENE_GRID_BLOCK_HEIGHT
 
-
-# abstract class that will contain all scene logic
 class Scene(QGraphicsScene):
     def __init__(self):
         super().__init__()
@@ -13,6 +11,9 @@ class Scene(QGraphicsScene):
         self.timer = QBasicTimer()
         self.grid = []
         self.grid_visible = True
+
+        self.game_objects = [None] * (
+                    int(SCENE_WIDTH / SCENE_GRID_BLOCK_WIDTH) * int(SCENE_HEIGHT / SCENE_GRID_BLOCK_HEIGHT))
 
     def start_scene_loop(self):
         if not self.timer.isActive():
@@ -36,9 +37,19 @@ class Scene(QGraphicsScene):
             # draw a line from 0, y_coordinate to SCENE_WIDTH, y_coordinate
             self.grid.append(self.addLine(0, y_coordinate, SCENE_WIDTH, y_coordinate, QPen(QColor(255, 255, 255))))
 
+        counter = 0
+        for n in range(0, columns):
+            for m in range(0, rows):
+                text = QGraphicsTextItem(str(counter))
+                text.setDefaultTextColor(Qt.white)
+                text.setPos(m * SCENE_GRID_BLOCK_HEIGHT, n * SCENE_GRID_BLOCK_WIDTH)
+                self.addItem(text)
+                self.grid.append(text)
+                counter = counter + 1
+
     def draw_background(self):
         background = QGraphicsRectItem()
-        background.setRect(-1, -1, SCENE_WIDTH + 2, SCENE_HEIGHT + 2)
+        background.setRect(0, 0, SCENE_WIDTH, SCENE_HEIGHT)
         background.setBrush(QBrush(Qt.black))
         self.addItem(background)
 

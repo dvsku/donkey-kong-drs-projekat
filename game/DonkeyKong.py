@@ -1,5 +1,5 @@
 import sys
-from SceneManager import SceneManager
+from game.SceneManager import SceneManager
 from PyQt5.QtWidgets import QApplication
 
 
