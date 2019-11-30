@@ -30,3 +30,15 @@ class PaintDirection(Enum):
 class PaintObject(Enum):
     PLATFORM = 1
     STAIRS = 2
+    PRINCESS = 3
+
+
+def set_common_data(list1, list2):
+    result = False
+    for x in list1:
+        for y in list2:
+            if x == y:
+                result = True
+                return result
+
+    return result

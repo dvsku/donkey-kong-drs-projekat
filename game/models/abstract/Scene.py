@@ -1,8 +1,10 @@
 from PyQt5.QtCore import QBasicTimer, Qt
-from PyQt5.QtGui import QPen, QColor, QBrush, QFont
+from PyQt5.QtGui import QPen, QColor, QBrush
 from PyQt5.QtWidgets import QGraphicsScene, QGraphicsRectItem, QGraphicsTextItem
 from game.globals import SCENE_HEIGHT, SCENE_WIDTH, SCENE_GRID_BLOCK_WIDTH, \
     SCENE_GRID_BLOCK_HEIGHT
+from game.models.Barrel import Barrel
+
 
 class Scene(QGraphicsScene):
     def __init__(self):
@@ -12,8 +14,14 @@ class Scene(QGraphicsScene):
         self.grid = []
         self.grid_visible = True
 
+        self.barrel_count = 5
+        self.barrel_pool = []
+        self.init_barrel_pool()
+
+        self.princess = None
+
         self.game_objects = [None] * (
-                    int(SCENE_WIDTH / SCENE_GRID_BLOCK_WIDTH) * int(SCENE_HEIGHT / SCENE_GRID_BLOCK_HEIGHT))
+                int(SCENE_WIDTH / SCENE_GRID_BLOCK_WIDTH) * int(SCENE_HEIGHT / SCENE_GRID_BLOCK_HEIGHT))
 
     def start_scene_loop(self):
         if not self.timer.isActive():
@@ -22,6 +30,16 @@ class Scene(QGraphicsScene):
     def stop_scene_loop(self):
         if self.timer.isActive():
             self.timer.stop()
+
+    def remove_element_from_scene(self, index: int):
+        self.removeItem(self.barrel_pool[index].item)
+
+    def init_barrel_pool(self):
+        for i in range(self.barrel_count):
+            temp = Barrel(self, i)
+            temp.item.setPos(i * 80, 220)
+            temp.delete[int].connect(self.remove_element_from_scene)
+            self.barrel_pool.append(temp)
 
     def draw_grid(self):
         rows = int(SCENE_WIDTH / SCENE_GRID_BLOCK_WIDTH)

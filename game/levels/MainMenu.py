@@ -13,8 +13,6 @@ class MainMenu(Scene):
         self.__parent__ = parent
         self.draw_background()
 
-        print(RESOURCES_DIR)
-
         self.foreground = QGraphicsRectItem()
         self.foreground.setZValue(2)
         self.foreground.setRect(-1, -1, SCENE_WIDTH + 2, SCENE_HEIGHT + 2)

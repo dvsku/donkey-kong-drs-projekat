@@ -10,6 +10,3 @@ class Princeza(QGraphicsPixmapItem):
 
         self.setPixmap(QPixmap(RESOURCES_DIR + "princeza.png"))
         self.setPos(x, y)
-
-
-

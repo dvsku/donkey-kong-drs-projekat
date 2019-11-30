@@ -23,7 +23,7 @@ class SceneManager:
 
     def load_level(self, index):
         if index == 1:
-            self.view.setScene(Level1())
+            self.view.setScene(Level1(self))
             self.view.scene().start_scene_loop()
 
     def close_game(self):

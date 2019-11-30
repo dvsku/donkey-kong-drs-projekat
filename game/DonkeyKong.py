@@ -1,9 +1,8 @@
 import sys
-from game.SceneManager import SceneManager
 from PyQt5.QtWidgets import QApplication
+from game.SceneManager import SceneManager
 
 
-# creates game window and sets up title and scene manager
 class DonkeyKong(QApplication):
     def __init__(self, args):
         super().__init__(args)
