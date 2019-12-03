@@ -1,45 +1,63 @@
-from PyQt5.QtCore import QBasicTimer, Qt
+from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPen, QColor, QBrush
 from PyQt5.QtWidgets import QGraphicsScene, QGraphicsRectItem, QGraphicsTextItem
-from game.globals import SCENE_HEIGHT, SCENE_WIDTH, SCENE_GRID_BLOCK_WIDTH, \
-    SCENE_GRID_BLOCK_HEIGHT
+from game.globals import *
 from game.models.Barrel import Barrel
+from game.models.Player1 import Player1
 
 
 class Scene(QGraphicsScene):
     def __init__(self):
         super().__init__()
         self.keys_pressed = set()
-        self.timer = QBasicTimer()
         self.grid = []
         self.grid_visible = True
+
+        self.kill_thread = False
 
         self.barrel_count = 5
         self.barrel_pool = []
         self.init_barrel_pool()
 
         self.princess = None
-        self.player1 = None
+        self.players = [Player1(self, 0, 0), Player1(self, 0, 0)]
 
         self.game_objects = [None] * (
                 int(SCENE_WIDTH / SCENE_GRID_BLOCK_WIDTH) * int(SCENE_HEIGHT / SCENE_GRID_BLOCK_HEIGHT))
 
-    def start_scene_loop(self):
-        if not self.timer.isActive():
-            self.timer.start(16, self)
+    def draw_item_to_scene(self, item):
+        item.is_drawn = True
+        self.addItem(item.item)
 
-    def stop_scene_loop(self):
-        if self.timer.isActive():
-            self.timer.stop()
+    def remove_item_from_scene(self, item):
+        item.is_drawn = False
+        self.removeItem(item.item)
 
     def remove_element_from_scene(self, index: int):
+        self.barrel_pool[index].is_drawn = False
         self.removeItem(self.barrel_pool[index].item)
+
+    def update_barrel(self, index: int):
+        self.barrel_pool[index].goDown()
+
+    def update_player_move(self, player: Player, direction: Direction):
+        if player == Player.PLAYER_1:
+            self.players[0].move(direction)
+        elif player == Player.PLAYER_2:
+            pass
+
+    def update_player_reset_animation(self, player: Player, direction: Direction):
+        if player == Player.PLAYER_1:
+            self.players[0].reset_animation(direction)
+        elif player == Player.PLAYER_2:
+            pass
 
     def init_barrel_pool(self):
         for i in range(self.barrel_count):
             temp = Barrel(self, i)
             temp.item.setPos(i * 80, 220)
             temp.delete[int].connect(self.remove_element_from_scene)
+            temp.modify[int].connect(self.update_barrel)
             self.barrel_pool.append(temp)
 
     def draw_grid(self):
@@ -77,14 +95,8 @@ class Scene(QGraphicsScene):
         for line in self.grid:
             line.setVisible(self.grid_visible)
 
-    def update_scene(self):
-        pass
-
     def keyPressEvent(self, event):
         pass
 
     def keyReleaseEvent(self, event):
         pass
-
-    def timerEvent(self, event):
-        self.update_scene()

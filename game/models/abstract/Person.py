@@ -1,14 +1,16 @@
-from PyQt5.QtCore import QObject
+from PyQt5.QtCore import QObject, pyqtSignal
 from PyQt5.QtWidgets import QGraphicsPixmapItem
 
-from game.globals import Direction, PLAYER_MOVE_SPEED_HORIZONTAL, SCENE_WIDTH
+from game.globals import *
 
 
 class Person(QObject):
+    move_signal = pyqtSignal(Player, Direction)
+    animation_reset = pyqtSignal(Player, Direction)
 
-    def __init__(self):
+    def __init__(self, parent):
         super().__init__()
-
+        self.__parent__ = parent
         self.item = QGraphicsPixmapItem()
 
         self.current_frame_index = 0
@@ -40,11 +42,15 @@ class Person(QObject):
         elif direction == Direction.RIGHT:
             self.item.setPixmap(self.default_frame_right)
 
-    def check_end_of_screen(self):
-        if self.item.pos().x() <= 0:
-            self.item.setPos(0, self.item.pos().y())
-        elif self.item.pos().x() >= SCENE_WIDTH - 40:
-            self.item.setPos(SCENE_WIDTH - 40, self.item.pos().y())
+    def move(self, direction: Direction):
+        if direction == direction.LEFT:
+            self.go_left()
+        elif direction == direction.RIGHT:
+            self.go_right()
+        elif direction == direction.UP:
+            self.go_up()
+        elif direction == direction.DOWN:
+            self.go_down()
 
     def go_up(self):
 
@@ -57,9 +63,9 @@ class Person(QObject):
     def go_left(self):
         self.animate(Direction.LEFT)
         self.item.moveBy(-PLAYER_MOVE_SPEED_HORIZONTAL, 0)
-        self.check_end_of_screen()
+        self.__parent__.__parent__.cd.check_end_of_screen_horizontal(self.item)
 
     def go_right(self):
         self.animate(Direction.RIGHT)
         self.item.moveBy(PLAYER_MOVE_SPEED_HORIZONTAL, 0)
-        self.check_end_of_screen()
+        self.__parent__.__parent__.cd.check_end_of_screen_horizontal(self.item)

@@ -1,11 +1,10 @@
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QBrush, QPixmap
-from PyQt5.QtWidgets import QGraphicsRectItem, QGraphicsPixmapItem
+from PyQt5.QtGui import QPixmap
+from PyQt5.QtWidgets import QGraphicsPixmapItem
 
 from game.globals import SCENE_WIDTH, SCENE_HEIGHT, State, Direction, RESOURCES_DIR
 from game.models.MenuButton import Button
 from game.models.abstract.Scene import Scene
-
 
 class MainMenu(Scene):
     def __init__(self, parent):
@@ -13,10 +12,10 @@ class MainMenu(Scene):
         self.__parent__ = parent
         self.draw_background()
 
-        self.foreground = QGraphicsRectItem()
-        self.foreground.setZValue(2)
-        self.foreground.setRect(-1, -1, SCENE_WIDTH + 2, SCENE_HEIGHT + 2)
-        self.foreground.setBrush(QBrush(Qt.black))
+        # self.foreground = QGraphicsRectItem()
+        # self.foreground.setZValue(2)
+        # self.foreground.setRect(-1, -1, SCENE_WIDTH + 2, SCENE_HEIGHT + 2)
+        # self.foreground.setBrush(QBrush(Qt.black))
 
         self.logo = QGraphicsPixmapItem()
         self.logo.setPixmap(QPixmap(RESOURCES_DIR + "menu/logo.png"))

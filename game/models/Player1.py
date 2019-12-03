@@ -5,8 +5,8 @@ from game.models.abstract.Person import Person
 
 
 class Player1(Person):
-    def __init__(self, x, y):
-        super().__init__()
+    def __init__(self, parent, x, y):
+        super().__init__(parent)
 
         self.current_frame_index = 0
         self.movement_frames_left = [
