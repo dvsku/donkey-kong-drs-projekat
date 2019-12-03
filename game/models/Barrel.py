@@ -16,8 +16,8 @@ class Barrel(QObject):
 
         self.current_animation_index = 0
         self.animation_frames = [
-            QPixmap(RESOURCES_DIR + "b_1.png"),
-            QPixmap(RESOURCES_DIR + "b_2.png")
+            QPixmap(RESOURCES_DIR + "barrel/b_1.png"),
+            QPixmap(RESOURCES_DIR + "barrel/b_2.png")
         ]
         self.item.setPixmap(self.animation_frames[0])
 

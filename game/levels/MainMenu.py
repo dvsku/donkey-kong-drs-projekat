@@ -1,5 +1,5 @@
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QBrush, QPixmap, QImage
+from PyQt5.QtGui import QBrush, QPixmap
 from PyQt5.QtWidgets import QGraphicsRectItem, QGraphicsPixmapItem
 
 from game.globals import SCENE_WIDTH, SCENE_HEIGHT, State, Direction, RESOURCES_DIR
@@ -19,16 +19,16 @@ class MainMenu(Scene):
         self.foreground.setBrush(QBrush(Qt.black))
 
         self.logo = QGraphicsPixmapItem()
-        self.logo.setPixmap(QPixmap(RESOURCES_DIR + "logo.png"))
+        self.logo.setPixmap(QPixmap(RESOURCES_DIR + "menu/logo.png"))
         self.logo.setPos((SCENE_WIDTH - 600) / 2, 50)
 
         self.buttons = [
             Button(self.__parent__.load_level, 1, (SCENE_WIDTH - 250) / 2, SCENE_HEIGHT - 250,
-                   RESOURCES_DIR + "start-normal.png",
-                   RESOURCES_DIR + "start-highlighted.png", State.HIGHLIGHTED),
+                   RESOURCES_DIR + "menu/start-normal.png",
+                   RESOURCES_DIR + "menu/start-highlighted.png", State.HIGHLIGHTED),
             Button(self.__parent__.close_game, None, (SCENE_WIDTH - 200) / 2, SCENE_HEIGHT - 175,
-                   RESOURCES_DIR + "quit-normal.png",
-                   RESOURCES_DIR + "quit-highlighted.png", State.NORMAL)
+                   RESOURCES_DIR + "menu/quit-normal.png",
+                   RESOURCES_DIR + "menu/quit-highlighted.png", State.NORMAL)
         ]
 
         # self.addItem(self.foreground)

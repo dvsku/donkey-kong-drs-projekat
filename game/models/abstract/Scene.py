@@ -19,6 +19,7 @@ class Scene(QGraphicsScene):
         self.init_barrel_pool()
 
         self.princess = None
+        self.player1 = None
 
         self.game_objects = [None] * (
                 int(SCENE_WIDTH / SCENE_GRID_BLOCK_WIDTH) * int(SCENE_HEIGHT / SCENE_GRID_BLOCK_HEIGHT))

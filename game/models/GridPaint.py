@@ -1,13 +1,14 @@
 from game.globals import PaintDirection, SCENE_WIDTH, SCENE_GRID_BLOCK_WIDTH, SCENE_HEIGHT, SCENE_GRID_BLOCK_HEIGHT, \
     PaintObject
 from game.models.Platforma import Platforma
+from game.models.Player1 import Player1
 from game.models.Princeza import Princeza
 from game.models.Stairs import Stairs
 from game.models.abstract.Scene import Scene
 
 
 class GridPaint:
-    def paint_one(self, scene: Scene, item: PaintObject, block: int, offset_x: int, offset_y):
+    def paint_one(self, scene: Scene, item: PaintObject, block: int, offset_x: int, offset_y: int):
         rows = int(SCENE_WIDTH / SCENE_GRID_BLOCK_WIDTH)
         columns = int(SCENE_HEIGHT / SCENE_GRID_BLOCK_HEIGHT)
 
@@ -21,6 +22,10 @@ class GridPaint:
                         scene.princess = Princeza(m * SCENE_GRID_BLOCK_WIDTH + offset_x,
                                                   n * SCENE_GRID_BLOCK_HEIGHT + offset_y)
                         scene.addItem(scene.princess)
+                    elif item == PaintObject.PLAYER_1:
+                        scene.player1 = Player1(m * SCENE_GRID_BLOCK_WIDTH + offset_x,
+                                                n * SCENE_GRID_BLOCK_HEIGHT + offset_y)
+                        scene.addItem(scene.player1.item)
 
     def paint_line(self, scene: Scene, item: PaintObject, from_block: int, to_block: int, direction: PaintDirection):
         rows = int(SCENE_WIDTH / SCENE_GRID_BLOCK_WIDTH)
