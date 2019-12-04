@@ -1,19 +1,28 @@
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QBrush
-from PyQt5.QtWidgets import QGraphicsRectItem
+from PyQt5.QtCore import Qt, QObject
+from PyQt5.QtGui import QBrush, QPixmap
+from PyQt5.QtWidgets import QGraphicsRectItem, QGraphicsPixmapItem
+
+from game.globals import RESOURCES_DIR
 
 
-class Gorilla(QGraphicsRectItem):
-    def __init__(self, x,y):
+class Gorilla(QObject):
+    def __init__(self, parent, x,y):
+
         super().__init__()
+        self.__parent__ = parent
+        self.item = QGraphicsPixmapItem()
+        self.is_drawn = False
 
-        self.setRect(x,y,50,100)
-        self.setBrush(QBrush(Qt.darkYellow))
-
+        self.current_animation_index = 0
+        self.animation_frames = [
+            QPixmap(RESOURCES_DIR + "Kong/kongkretanje_1.png"),
+            QPixmap(RESOURCES_DIR + "Kong/kongkretanje_2.png")
+        ]
+        self.item.setPixmap(self.animation_frames[0])
+        self.item.setZValue(4)
 
     def goLeft(self):
         self.moveBy(-10,0)
-        #self.tryMove(-10,0)
 
     def goRight(self):
         self.moveBy(10,0)
