@@ -26,6 +26,10 @@ class GridPaint:
                         scene.players[0].item.setPos(m * SCENE_GRID_BLOCK_WIDTH + offset_x,
                                                      n * SCENE_GRID_BLOCK_HEIGHT + offset_y)
                         scene.addItem(scene.players[0].item)
+                    elif item == PaintObject.PLAYER_2:
+                        scene.players[1].item.setPos(m * SCENE_GRID_BLOCK_WIDTH + offset_x,
+                                                     n * SCENE_GRID_BLOCK_HEIGHT + offset_y)
+                        scene.addItem(scene.players[1].item)
 
     def paint_line(self, scene: Scene, item: PaintObject, from_block: int, to_block: int, direction: PaintDirection):
         rows = int(SCENE_WIDTH / SCENE_GRID_BLOCK_WIDTH)

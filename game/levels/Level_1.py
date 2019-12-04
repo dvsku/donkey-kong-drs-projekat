@@ -29,6 +29,7 @@ class Level1(Scene):
 
         self.grid_painter.paint_one(self, PaintObject.PRINCESS, 184, -20, -15)
         self.grid_painter.paint_one(self, PaintObject.PLAYER_1, 280, 0, -15)
+        self.grid_painter.paint_one(self, PaintObject.PLAYER_2, 280, 760, -15)
 
         self.players[0].move_signal[Player, Direction].connect(self.update_player_move)
         self.players[0].animation_reset[Player, Direction].connect(self.update_player_reset_animation)
@@ -57,12 +58,25 @@ class Level1(Scene):
                 elif Qt.Key_Right in self.keys_pressed:
                     self.last_pressed_key = Qt.Key_Right
                     self.players[0].move_signal.emit(Player.PLAYER_1, Direction.RIGHT)
+                # elif Qt.Key_A in self.keys_pressed:
+                #     self.last_pressed_key = Qt.Key_A
+                #     self.players[1].move_signal.emit(Player.PLAYER_2, Direction.LEFT)
+                # elif Qt.Key_D in self.keys_pressed:
+                #     self.players[1].move_signal.emit(Player.PLAYER_2, Direction.RIGHT)
+
             else:
                 if self.last_pressed_key == Qt.Key_Left:
                     self.players[0].animation_reset.emit(Player.PLAYER_1, Direction.LEFT)
                 elif self.last_pressed_key == Qt.Key_Right:
                     self.players[0].animation_reset.emit(Player.PLAYER_1, Direction.RIGHT)
+                # elif self.last_pressed_key == Qt.Key_A:
+                #     self.players[1].animation_reset.emit(Player.PLAYER_2, Direction.LEFT)
+                # elif self.last_pressed_key == Qt.Key_D:
+                #     self.players[1].animation_reset.emit(Player.PLAYER_2, Direction.RIGHT)
+
             time.sleep(0.03)
+
+
 
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_M:
