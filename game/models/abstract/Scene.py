@@ -4,6 +4,7 @@ from PyQt5.QtWidgets import QGraphicsScene, QGraphicsRectItem, QGraphicsTextItem
 from game.globals import *
 from game.models.Barrel import Barrel
 from game.models.Player1 import Player1
+from game.models.Player2 import Player2
 
 
 class Scene(QGraphicsScene):
@@ -20,7 +21,7 @@ class Scene(QGraphicsScene):
         self.init_barrel_pool()
 
         self.princess = None
-        self.players = [Player1(self, 0, 0), Player1(self, 0, 0)]
+        self.players = [Player1(self, 0, 0), Player2(self, 0, 0)]
 
         self.game_objects = [None] * (
                 int(SCENE_WIDTH / SCENE_GRID_BLOCK_WIDTH) * int(SCENE_HEIGHT / SCENE_GRID_BLOCK_HEIGHT))
