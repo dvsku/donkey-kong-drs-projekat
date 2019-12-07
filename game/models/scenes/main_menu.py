@@ -10,7 +10,6 @@ class MainMenu(InfoScene):
     def __init__(self, parent):
         super().__init__()
         self.__parent__ = parent
-        self.draw_background()
 
         # self.foreground = QGraphicsRectItem()
         # self.foreground.setZValue(2)

@@ -39,7 +39,7 @@ class PaintDirection(Enum):
 
 class PaintObject(Enum):
     PLATFORM = 1
-    STAIRS = 2
+    LADDER = 2
     PRINCESS = 3
     PLAYER_1 = 4
     PLAYER_2 = 5

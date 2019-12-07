@@ -6,11 +6,13 @@ from game.globals import *
 class PlayableCharacter(QObject):
     move_signal = pyqtSignal(Player, Direction)
     animation_reset = pyqtSignal(Player, Direction)
+    fall_signal = pyqtSignal(Player)
 
     def __init__(self, parent):
         super().__init__()
         self.__parent__ = parent
         self.item = QGraphicsPixmapItem()
+        self.falling = False
 
         self.current_frame_index = 0
         self.movement_frames_left = []
@@ -66,3 +68,6 @@ class PlayableCharacter(QObject):
     def go_right(self):
         self.animate(Direction.RIGHT)
         self.item.moveBy(5, 0)
+
+    def fall(self):
+        self.item.moveBy(0, 5)

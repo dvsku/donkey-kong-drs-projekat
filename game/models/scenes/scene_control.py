@@ -1,4 +1,5 @@
 from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QBrush
 from PyQt5.QtWidgets import QGraphicsView
 from game.globals import WINDOW_WIDTH, WINDOW_HEIGHT, CCMethods
 from game.models.abstract.game_scene import GameScene
@@ -18,6 +19,8 @@ class SceneControl:
         self.view.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.view.setFixedSize(WINDOW_WIDTH + 3, WINDOW_HEIGHT + 3)
         self.view.show()
+
+        self.view.setBackgroundBrush(QBrush(Qt.black))
 
         self.load_main_menu()
 

@@ -64,13 +64,14 @@ class GridPainter:
                             paint_block = paint_block + 1
 
                     if direction == PaintDirection.VERTICAL:
-                        if item == PaintObject.STAIRS:
+                        if item == PaintObject.LADDER:
                             temp_item = Ladder()
                             temp_item.setPos(m * SCENE_GRID_BLOCK_WIDTH + offset_x,
                                              n * SCENE_GRID_BLOCK_HEIGHT + offset_y)
                             temp_item.setZValue(1)
                             scene.game_objects[counter] = temp_item
-                            scene.addItem(temp_item)
+                            if paint_block != from_block:
+                                scene.addItem(temp_item)
                             if paint_block == to_block:
                                 break
 

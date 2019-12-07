@@ -30,7 +30,7 @@ class CollisionControl(mp.Process):
     def check_end_of_screen_left(self, x):
         ret_val = False
 
-        if x <= -5:
+        if x <= 0:
             ret_val = True
 
         self.send_queue.put(Message(CCMethods.EMPTY, ret_val))
@@ -38,7 +38,7 @@ class CollisionControl(mp.Process):
     def check_end_of_screen_right(self, x):
         ret_val = False
 
-        if x >= SCENE_WIDTH - 35:
+        if x >= SCENE_WIDTH - 26:
             ret_val = True
 
         self.send_queue.put(Message(CCMethods.EMPTY, ret_val))
@@ -58,11 +58,10 @@ class CollisionControl(mp.Process):
         barrel_pos_x_to = barrel_pos_x_from + b_width
 
         player_pos_y = p_y
-        # player sprite is 40x40px but without transparent pixels the character is actually 22px wide
-        player_pos_x_from = p_x + 9
-        player_pos_x_to = p_x + 22
+        player_pos_x_from = p_x
+        player_pos_x_to = p_x + 26
 
-        if barrel_pos_y != player_pos_y:
+        if barrel_pos_y <= player_pos_y:
             ret_val = False
 
         if ((barrel_pos_x_from < player_pos_x_from) and (barrel_pos_x_to < player_pos_x_from)) or \

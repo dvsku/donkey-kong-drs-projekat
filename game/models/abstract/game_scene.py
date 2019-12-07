@@ -1,16 +1,15 @@
 import multiprocessing as mp
 import threading
 import time
-
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QPen, QColor, QBrush
-from PyQt5.QtWidgets import QGraphicsScene, QGraphicsRectItem, QGraphicsTextItem
-
+from PyQt5.QtGui import QPen, QColor
+from PyQt5.QtWidgets import QGraphicsScene, QGraphicsTextItem
 from game.collision_control import CollisionControl
 from game.globals import *
 from game.models.abstract.playable_character import PlayableCharacter
 from game.models.game_objects.barrel import Barrel
 from game.models.game_objects.first_player import FirstPlayer
+from game.models.game_objects.platform import Platform
 from game.models.game_objects.second_player import SecondPlayer
 from game.models.helper.queue_message import Message
 
@@ -34,6 +33,7 @@ class GameScene(QGraphicsScene):
 
         self.barrel_thread = threading.Thread(target=self.barrel_thread_do_work)
         self.players_thread = threading.Thread(target=self.player_thread_do_work)
+        self.players_falling_thread = threading.Thread(target=self.player_falling_thread_do_work)
 
         self.barrel_count = 5
         self.barrel_pool = []
@@ -44,12 +44,6 @@ class GameScene(QGraphicsScene):
 
         self.game_objects = [None] * (
                 int(SCENE_WIDTH / SCENE_GRID_BLOCK_WIDTH) * int(SCENE_HEIGHT / SCENE_GRID_BLOCK_HEIGHT))
-
-    def draw_background(self):
-        background = QGraphicsRectItem()
-        background.setRect(0, 0, SCENE_WIDTH, SCENE_HEIGHT)
-        background.setBrush(QBrush(Qt.black))
-        self.addItem(background)
 
     # region Updates From Signals
     def update_barrel(self, index: int):
@@ -66,6 +60,12 @@ class GameScene(QGraphicsScene):
             self.players[0].reset_animation(direction)
         elif player == Player.PLAYER_2:
             self.players[1].reset_animation(direction)
+
+    def update_player_fall(self, player: Player):
+        if player == Player.PLAYER_1:
+            self.players[0].fall()
+        elif player == Player.PLAYER_2:
+            self.players[1].fall()
 
     # endregion
 
@@ -166,6 +166,27 @@ class GameScene(QGraphicsScene):
 
         return msg.args[0]
 
+    def check_falling(self, x, y, direction: Direction):
+        ret_value = False
+
+        if direction == Direction.LEFT:
+            column = int((x + 20) / 40)
+        elif direction == Direction.RIGHT:
+            column = int(x / 40)
+        else:
+            return False
+
+        row = int(y / 40)
+        block = column + (int(SCENE_WIDTH / SCENE_GRID_BLOCK_WIDTH) * row)
+
+        if self.game_objects[block] is None:
+            ret_value = True
+        elif isinstance(self.game_objects[block], Platform):
+            if self.game_objects[block].pos().y() != y:
+                ret_value = True
+
+        return ret_value
+
     # endregion
 
     # region Barrel Thread
@@ -185,15 +206,17 @@ class GameScene(QGraphicsScene):
     # region Player Thread
     def player_thread_do_work(self):
         while not self.kill_thread:
-            if len(self.first_player_keys_pressed) != 0:
-                self.player_thread_move_first_player()
-            else:
-                self.player_thread_reset_animations_first_player()
+            if not self.players[0].falling:
+                if len(self.first_player_keys_pressed) != 0:
+                    self.player_thread_move_first_player()
+                else:
+                    self.player_thread_reset_animations_first_player()
 
-            if len(self.second_player_keys_pressed) != 0:
-                self.player_thread_move_second_player()
-            else:
-                self.player_thread_reset_animations_second_player()
+            if not self.players[1].falling:
+                if len(self.second_player_keys_pressed) != 0:
+                    self.player_thread_move_second_player()
+                else:
+                    self.player_thread_reset_animations_second_player()
 
             time.sleep(0.03)
 
@@ -243,6 +266,39 @@ class GameScene(QGraphicsScene):
         elif self.second_player_latest_key == Qt.Key_Right:
             self.players[1].animation_reset.emit(Player.PLAYER_2, Direction.RIGHT)
 
+    def player_falling_thread_do_work(self):
+        while not self.kill_thread:
+            first_player_x = self.players[0].item.pos().x()
+            first_player_y = self.players[0].item.pos().y() + 35
+            second_player_x = self.players[1].item.pos().x()
+            second_player_y = self.players[1].item.pos().y() + 35
+
+            fall = False
+            if Qt.Key_A == self.first_player_latest_key:
+                fall = self.check_falling(first_player_x, first_player_y, Direction.LEFT)
+            elif Qt.Key_D == self.first_player_latest_key:
+                fall = self.check_falling(first_player_x, first_player_y, Direction.RIGHT)
+
+            if fall:
+                self.players[0].falling = True
+                self.players[0].fall_signal.emit(Player.PLAYER_1)
+            else:
+                self.players[0].falling = False
+
+            fall = False
+            if Qt.Key_Left == self.second_player_latest_key:
+                fall = self.check_falling(second_player_x, second_player_y, Direction.LEFT)
+            elif Qt.Key_Right == self.second_player_latest_key:
+                fall = self.check_falling(second_player_x, second_player_y, Direction.RIGHT)
+
+            if fall:
+                self.players[1].falling = True
+                self.players[1].fall_signal.emit(Player.PLAYER_2)
+            else:
+                self.players[1].falling = False
+
+            time.sleep(0.015)
+
     # endregion
 
     # region KeyPressEvents
@@ -268,4 +324,5 @@ class GameScene(QGraphicsScene):
 
         if event.key() in self.second_player_keys_pressed:
             self.second_player_keys_pressed.remove(event.key())
+
     # endregion
