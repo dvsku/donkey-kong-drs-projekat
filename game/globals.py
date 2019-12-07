@@ -11,8 +11,16 @@ SCENE_GRID_BLOCK_HEIGHT = 40
 PLAYER_MOVE_SPEED_HORIZONTAL = 7
 
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
-RESOURCES_DIR = ROOT_DIR + "/resources/"
+IMAGES_DIR = ROOT_DIR + "/resources/images/"
 
+
+class CCMethods(Enum):
+    END_OF_SCREEN_L = "check_end_of_screen_left"
+    END_OF_SCREEN_R = "check_end_of_screen_right"
+    END_OF_SCREEN_V = "check_end_of_screen_vertical"
+    BARREL_COLLISION = "check_barrel_collision"
+    KILL_PROCESS = "end"
+    EMPTY = ""
 
 class Direction(Enum):
     UP = 1
@@ -20,17 +28,14 @@ class Direction(Enum):
     LEFT = 3
     RIGHT = 4
 
-
 class State(Enum):
     NONE = 0
     NORMAL = 1
     HIGHLIGHTED = 2
 
-
 class PaintDirection(Enum):
     HORIZONTAL = 1
     VERTICAL = 2
-
 
 class PaintObject(Enum):
     PLATFORM = 1
@@ -39,18 +44,7 @@ class PaintObject(Enum):
     PLAYER_1 = 4
     PLAYER_2 = 5
 
-
 class Player(Enum):
     PLAYER_1 = 1
     PLAYER_2 = 2
 
-
-def set_common_data(list1, list2):
-    result = False
-    for x in list1:
-        for y in list2:
-            if x == y:
-                result = True
-                return result
-
-    return result
