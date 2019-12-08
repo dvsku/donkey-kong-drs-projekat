@@ -6,73 +6,45 @@ from game.models.abstract.game_scene import GameScene
 
 
 class GridPainter:
-    def paint_one(self, scene: GameScene, item: PaintObject, block: int, offset_x: int, offset_y: int):
-        """
-        Used to paint a single object to a game scene
-        :param scene: Game scene
-        :param item: Game object
-        :param block: Block on the grid
-        :param offset_x: X axis offset in relation to the previously specified block
-        :param offset_y: Y axis offset in relation to the previously specified block
-        """
-        rows = int(SCENE_WIDTH / SCENE_GRID_BLOCK_WIDTH)
-        columns = int(SCENE_HEIGHT / SCENE_GRID_BLOCK_HEIGHT)
+    def __init__(self, scene: GameScene):
+        self.scene = scene
 
-        counter = -1
-        for n in range(0, columns):
-            for m in range(0, rows):
-                counter = counter + 1
+    def paint_one(self, x: int, y: int, offset_x: int, offset_y: int, item: PaintObject):
+        if item == PaintObject.PRINCESS:
+            self.scene.princess = Princess(x * SCENE_GRID_BLOCK_WIDTH + offset_x,
+                                           y * SCENE_GRID_BLOCK_HEIGHT + offset_y)
+            self.scene.addItem(self.scene.princess)
+        elif item == PaintObject.PLAYER_1:
+            self.scene.players[0].item.setPos(x * SCENE_GRID_BLOCK_WIDTH + offset_x,
+                                              y * SCENE_GRID_BLOCK_HEIGHT + offset_y)
+            self.scene.addItem(self.scene.players[0].item)
+        elif item == PaintObject.PLAYER_2:
+            self.scene.players[1].item.setPos(x * SCENE_GRID_BLOCK_WIDTH + offset_x,
+                                              y * SCENE_GRID_BLOCK_HEIGHT + offset_y)
+            self.scene.addItem(self.scene.players[1].item)
 
-                if counter == block:
-                    if item == PaintObject.PRINCESS:
-                        scene.princess = Princess(m * SCENE_GRID_BLOCK_WIDTH + offset_x,
-                                                  n * SCENE_GRID_BLOCK_HEIGHT + offset_y)
-                        scene.addItem(scene.princess)
-                    elif item == PaintObject.PLAYER_1:
-                        scene.players[0].item.setPos(m * SCENE_GRID_BLOCK_WIDTH + offset_x,
-                                                     n * SCENE_GRID_BLOCK_HEIGHT + offset_y)
-                        scene.addItem(scene.players[0].item)
-                    elif item == PaintObject.PLAYER_2:
-                        scene.players[1].item.setPos(m * SCENE_GRID_BLOCK_WIDTH + offset_x,
-                                                     n * SCENE_GRID_BLOCK_HEIGHT + offset_y)
-                        scene.addItem(scene.players[1].item)
+    def paint_horizontal_line(self, x1: int, x2: int, y: int, offset_x: int, offset_y: int, item: PaintObject):
+        if x2 < x1:
+            print("x1 cannot be bigger than x2")
+            return
 
-    def paint_line(self, scene: GameScene, item: PaintObject, from_block: int, to_block: int, direction: PaintDirection,
-                   offset_x: int, offset_y: int):
+        for i in range((x2 - x1) + 1):
+            if item == PaintObject.PLATFORM:
+                temp = Platform()
+                temp.setPos((i + x1) * SCENE_GRID_BLOCK_WIDTH + offset_x, y * SCENE_GRID_BLOCK_HEIGHT + offset_y)
+                temp.setZValue(2)
+                self.scene.test[i + x1][y] = temp
+                self.scene.addItem(self.scene.test[i + x1][y])
 
-        rows = int(SCENE_WIDTH / SCENE_GRID_BLOCK_WIDTH)
-        columns = int(SCENE_HEIGHT / SCENE_GRID_BLOCK_HEIGHT)
+    def paint_vertical_line(self, x: int, y1: int, y2: int, offset_x: int, offset_y: int, item: PaintObject):
+        if y2 < y1:
+            print("y1 cannot be bigger than y2")
+            return
 
-        counter = -1
-        paint_block = from_block
-        for n in range(0, columns):
-            for m in range(0, rows):
-                counter = counter + 1
-
-                if counter == paint_block:
-                    if direction == PaintDirection.HORIZONTAL:
-                        if item == PaintObject.PLATFORM:
-                            temp_item = Platform()
-                            temp_item.setPos(m * SCENE_GRID_BLOCK_WIDTH + offset_x,
-                                             n * SCENE_GRID_BLOCK_HEIGHT + offset_y)
-                            temp_item.setZValue(2)
-                            scene.game_objects[counter] = temp_item
-                            scene.addItem(scene.game_objects[counter])
-                            if paint_block >= to_block:
-                                break
-
-                            paint_block = paint_block + 1
-
-                    if direction == PaintDirection.VERTICAL:
-                        if item == PaintObject.LADDER:
-                            temp_item = Ladder()
-                            temp_item.setPos(m * SCENE_GRID_BLOCK_WIDTH + offset_x,
-                                             n * SCENE_GRID_BLOCK_HEIGHT + offset_y)
-                            temp_item.setZValue(1)
-                            scene.game_objects[counter] = temp_item
-                            if paint_block != from_block:
-                                scene.addItem(temp_item)
-                            if paint_block == to_block:
-                                break
-
-                            paint_block = paint_block + rows
+        for i in range((y2 - y1) + 1):
+            if item == PaintObject.LADDER:
+                temp = Ladder()
+                temp.setPos(x * SCENE_GRID_BLOCK_WIDTH + offset_x, (i + y1) * SCENE_GRID_BLOCK_HEIGHT + offset_y)
+                temp.setZValue(2)
+                self.scene.test[x][i + y1] = temp
+                self.scene.addItem(self.scene.test[x][i + y1])

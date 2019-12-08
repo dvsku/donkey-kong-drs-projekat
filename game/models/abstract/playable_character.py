@@ -4,9 +4,9 @@ from game.globals import *
 
 
 class PlayableCharacter(QObject):
-    move_signal = pyqtSignal(Player, Direction)
-    animation_reset = pyqtSignal(Player, Direction)
-    fall_signal = pyqtSignal(Player)
+    move_signal = pyqtSignal(Direction)
+    animation_reset_signal = pyqtSignal(Direction)
+    fall_signal = pyqtSignal()
 
     def __init__(self, parent):
         super().__init__()
@@ -19,6 +19,10 @@ class PlayableCharacter(QObject):
         self.movement_frames_right = []
         self.default_frame_left = None
         self.default_frame_right = None
+
+        self.move_signal[Direction].connect(self.move)
+        self.animation_reset_signal[Direction].connect(self.reset_animation)
+        self.fall_signal.connect(self.fall)
 
     def animate(self, direction: Direction):
         count = -1

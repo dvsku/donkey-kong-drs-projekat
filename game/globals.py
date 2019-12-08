@@ -3,12 +3,13 @@ from enum import Enum
 
 WINDOW_WIDTH = 800
 WINDOW_HEIGHT = 600
+
 SCENE_WIDTH = 800
 SCENE_HEIGHT = 600
 SCENE_GRID_BLOCK_WIDTH = 40
 SCENE_GRID_BLOCK_HEIGHT = 40
 
-PLAYER_MOVE_SPEED_HORIZONTAL = 7
+BARREL_POOL_SIZE = 5
 
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 IMAGES_DIR = ROOT_DIR + "/resources/images/"
@@ -44,7 +45,4 @@ class PaintObject(Enum):
     PLAYER_1 = 4
     PLAYER_2 = 5
 
-class Player(Enum):
-    PLAYER_1 = 1
-    PLAYER_2 = 2
 
