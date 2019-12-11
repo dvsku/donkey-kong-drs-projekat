@@ -10,6 +10,7 @@ from game.globals import *
 from game.models.abstract.playable_character import PlayableCharacter
 from game.models.game_objects.barrel import Barrel
 from game.models.game_objects.first_player import FirstPlayer
+from game.models.game_objects.ladder import Ladder
 from game.models.game_objects.platform import Platform
 from game.models.game_objects.second_player import SecondPlayer
 from game.models.helper.queue_message import Message
@@ -19,10 +20,6 @@ class GameScene(QGraphicsScene):
     def __init__(self, parent):
         super().__init__()
         self.__parent__ = parent
-        self.first_player_keys_pressed = set()
-        self.second_player_keys_pressed = set()
-        self.first_player_latest_key = None
-        self.second_player_latest_key = None
         self.grid = []
         self.grid_visible = True
         self.kill_thread = False
@@ -40,8 +37,8 @@ class GameScene(QGraphicsScene):
         self.princess = None
         self.players = np.array([FirstPlayer(self, 0, 0), SecondPlayer(self, 0, 0)])
 
-        self.test = np.full(300, None).reshape(int(SCENE_WIDTH / SCENE_GRID_BLOCK_WIDTH),
-                                               int(SCENE_HEIGHT / SCENE_GRID_BLOCK_HEIGHT))
+        self.game_objects = np.full(300, None).reshape(int(SCENE_WIDTH / SCENE_GRID_BLOCK_WIDTH),
+                                                       int(SCENE_HEIGHT / SCENE_GRID_BLOCK_HEIGHT))
 
     # region Barrels
 
@@ -147,11 +144,63 @@ class GameScene(QGraphicsScene):
         else:
             return False
 
-        if self.test[x][y] is None:
+        if self.game_objects[x][y] is None:
             ret_value = True
-        elif isinstance(self.test[x][y], Platform):
-            if self.test[x][y].pos().y() != player_y:
+        elif isinstance(self.game_objects[x][y], Platform):
+            if self.game_objects[x][y].pos().y() != player_y:
                 ret_value = True
+
+        return ret_value
+
+    def check_climbing(self, player_x, player_y, direction: Direction):
+        # default return value, if it's NONE, don't climb
+        ret_value = ClimbState.NONE
+
+        # get x center point
+        player_x_center = player_x + 13
+
+        if direction == Direction.UP:
+            # get x  of the block the player is in
+            x = int(player_x / SCENE_GRID_BLOCK_WIDTH)
+            # get y of the block the player is in (feet level)
+            y = int((player_y + 34) / SCENE_GRID_BLOCK_HEIGHT)
+
+            if isinstance(self.game_objects[x][y], Ladder):
+                # get climbable ladder x coordinates (the whole ladder is not climbable)
+                ladder_x_from = self.game_objects[x][y].pos().x() + 5
+                ladder_x_to = self.game_objects[x][y].pos().x() + 30
+
+                # check if the player is between climbable x coordinates
+                if (ladder_x_from < player_x_center) and (ladder_x_to > player_x_center):
+                    # get y of the block at player head level
+                    y = int((player_y + 3) / SCENE_GRID_BLOCK_HEIGHT)
+
+                    # check if block above the player's head is empty
+                    if self.game_objects[x][y] is None:
+                        ret_value = ClimbState.FINISH
+                    else:
+                        ret_value = ClimbState.CLIMB
+        elif direction == Direction.DOWN:
+            # get x  of the block the player is in
+            x = int(player_x / SCENE_GRID_BLOCK_WIDTH)
+            # get y of the block the player is in (feet level)
+            y = int((player_y + 35) / SCENE_GRID_BLOCK_HEIGHT)
+
+            if isinstance(self.game_objects[x][y], Ladder):
+                # get climbable ladder x coordinates (the whole ladder is not climbable)
+                ladder_x_from = self.game_objects[x][y].pos().x() + 5
+                ladder_x_to = self.game_objects[x][y].pos().x() + 30
+
+                # check if the player is between climbable x coordinates
+                if (ladder_x_from < player_x_center) and (ladder_x_to > player_x_center):
+                    # get y of the block at player head level
+                    y = int((player_y + 3) / SCENE_GRID_BLOCK_HEIGHT)
+
+                    # check if block above the player's head is empty
+                    if self.game_objects[x][y] is None:
+                        ret_value = ClimbState.START
+                    else:
+                        ret_value = ClimbState.CLIMB
 
         return ret_value
 
@@ -174,96 +223,89 @@ class GameScene(QGraphicsScene):
     # region Player Thread
     def player_thread_do_work(self):
         while not self.kill_thread:
-            if not self.players[0].falling:
-                if len(self.first_player_keys_pressed) != 0:
-                    self.player_thread_move_first_player()
-                else:
-                    self.player_thread_reset_animations_first_player()
-
-            if not self.players[1].falling:
-                if len(self.second_player_keys_pressed) != 0:
-                    self.player_thread_move_second_player()
-                else:
-                    self.player_thread_reset_animations_second_player()
+            for i in range(len(self.players)):
+                if not self.players[i].falling:
+                    if len(self.players[i].keys_pressed) != 0:
+                        self.player_thread_move_player(self.players[i])
+                    else:
+                        self.player_thread_reset_animation(self.players[i])
 
             time.sleep(0.03)
 
-    def player_thread_move_first_player(self):
-        x = self.players[0].item.pos().x()
+    def player_thread_move_player(self, player: PlayableCharacter):
+        x = player.item.pos().x()
+        y = player.item.pos().y()
 
-        if Qt.Key_A in self.first_player_keys_pressed:
-            if self.check_end_of_screen_left(x):
-                self.players[0].animation_reset_signal.emit(Direction.LEFT)
-            else:
-                self.players[0].move_signal.emit(Direction.LEFT)
-                self.first_player_latest_key = Qt.Key_A
+        # up key
+        if player.action_keys[0] in player.keys_pressed:
+            player.latest_key = player.action_keys[0]
+            result = self.check_climbing(x, y, Direction.UP)
 
-        elif Qt.Key_D in self.first_player_keys_pressed:
-            if self.check_end_of_screen_right(x):
-                self.players[0].animation_reset_signal.emit(Direction.RIGHT)
-            else:
-                self.players[0].move_signal.emit(Direction.RIGHT)
-                self.first_player_latest_key = Qt.Key_D
+            if result == ClimbState.CLIMB:
+                player.climbing = True
+                player.move_signal.emit(Direction.UP)
+            elif result == ClimbState.FINISH:
+                player.climbing = True
+                player.climb_finish_signal.emit()
+            elif result == ClimbState.NONE:
+                player.climbing = False
+                player.animation_reset_signal.emit(Direction.UP)
+        # down key
+        elif player.action_keys[1] in player.keys_pressed:
+            player.latest_key = player.action_keys[1]
+            result = self.check_climbing(x, y, Direction.DOWN)
 
-    def player_thread_move_second_player(self):
-        x = self.players[1].item.pos().x()
+            if result == ClimbState.CLIMB:
+                player.climbing = True
+                player.move_signal.emit(Direction.DOWN)
+            elif result == ClimbState.START:
+                player.climbing = True
+                player.climb_start_signal.emit()
+            elif result == ClimbState.NONE:
+                player.climbing = False
+                player.animation_reset_signal.emit(Direction.DOWN)
+        # left key
+        elif player.action_keys[2] in player.keys_pressed:
+            if not player.climbing:
+                if self.check_end_of_screen_left(x):
+                    player.animation_reset_signal.emit(Direction.LEFT)
+                else:
+                    player.move_signal.emit(Direction.LEFT)
+                    player.latest_key = player.action_keys[2]
+        # right key
+        elif player.action_keys[3] in player.keys_pressed:
+            if not player.climbing:
+                if self.check_end_of_screen_right(x):
+                    player.animation_reset_signal.emit(Direction.RIGHT)
+                else:
+                    player.move_signal.emit(Direction.RIGHT)
+                    player.latest_key = player.action_keys[3]
 
-        if Qt.Key_Left in self.second_player_keys_pressed:
-            if self.check_end_of_screen_left(x):
-                self.players[1].animation_reset_signal.emit(Direction.LEFT)
-            else:
-                self.players[1].move_signal.emit(Direction.LEFT)
-                self.second_player_latest_key = Qt.Key_Left
-
-        elif Qt.Key_Right in self.second_player_keys_pressed:
-            if self.check_end_of_screen_right(x):
-                self.players[1].animation_reset_signal.emit(Direction.RIGHT)
-            else:
-                self.players[1].move_signal.emit(Direction.RIGHT)
-                self.second_player_latest_key = Qt.Key_Right
-
-    def player_thread_reset_animations_first_player(self):
-        if self.first_player_latest_key == Qt.Key_A:
-            self.players[0].animation_reset_signal.emit(Direction.LEFT)
-        elif self.first_player_latest_key == Qt.Key_D:
-            self.players[0].animation_reset_signal.emit(Direction.RIGHT)
-
-    def player_thread_reset_animations_second_player(self):
-        if self.second_player_latest_key == Qt.Key_Left:
-            self.players[1].animation_reset_signal.emit(Direction.LEFT)
-        elif self.second_player_latest_key == Qt.Key_Right:
-            self.players[1].animation_reset_signal.emit(Direction.RIGHT)
+    def player_thread_reset_animation(self, player: PlayableCharacter):
+        if player.latest_key == player.action_keys[2]:
+            player.animation_reset_signal.emit(Direction.LEFT)
+        elif player.latest_key == player.action_keys[3]:
+            player.animation_reset_signal.emit(Direction.RIGHT)
 
     def player_falling_thread_do_work(self):
         while not self.kill_thread:
-            first_player_x = self.players[0].item.pos().x()
-            first_player_y = self.players[0].item.pos().y() + 35
-            second_player_x = self.players[1].item.pos().x()
-            second_player_y = self.players[1].item.pos().y() + 35
+            for i in range(len(self.players)):
+                player_x = self.players[i].item.pos().x()
+                player_y = self.players[i].item.pos().y() + 35
 
-            fall = False
-            if Qt.Key_A == self.first_player_latest_key:
-                fall = self.check_falling(first_player_x, first_player_y, Direction.LEFT)
-            elif Qt.Key_D == self.first_player_latest_key:
-                fall = self.check_falling(first_player_x, first_player_y, Direction.RIGHT)
+                should_fall = False
+                # left key
+                if self.players[i].latest_key == self.players[i].action_keys[2]:
+                    should_fall = self.check_falling(player_x, player_y, Direction.LEFT)
+                # right key
+                elif self.players[i].latest_key == self.players[i].action_keys[3]:
+                    should_fall = self.check_falling(player_x, player_y, Direction.RIGHT)
 
-            if fall:
-                self.players[0].falling = True
-                self.players[0].fall_signal.emit()
-            else:
-                self.players[0].falling = False
-
-            fall = False
-            if Qt.Key_Left == self.second_player_latest_key:
-                fall = self.check_falling(second_player_x, second_player_y, Direction.LEFT)
-            elif Qt.Key_Right == self.second_player_latest_key:
-                fall = self.check_falling(second_player_x, second_player_y, Direction.RIGHT)
-
-            if fall:
-                self.players[1].falling = True
-                self.players[1].fall_signal.emit()
-            else:
-                self.players[1].falling = False
+                if should_fall:
+                    self.players[i].falling = True
+                    self.players[i].fall_signal.emit()
+                else:
+                    self.players[i].falling = False
 
             time.sleep(0.015)
 
@@ -279,18 +321,18 @@ class GameScene(QGraphicsScene):
             return
 
         if event.key() in {Qt.Key_A, Qt.Key_D, Qt.Key_W,
-                           Qt.Key_S} and not event.key() in self.first_player_keys_pressed:
-            self.first_player_keys_pressed.add(event.key())
+                           Qt.Key_S} and not event.key() in self.players[0].keys_pressed:
+            self.players[0].keys_pressed.add(event.key())
 
         if event.key() in {Qt.Key_Left, Qt.Key_Right, Qt.Key_Up, Qt.Key_Down} and \
-                not event.key() in self.second_player_keys_pressed:
-            self.second_player_keys_pressed.add(event.key())
+                not event.key() in self.players[1].keys_pressed:
+            self.players[1].keys_pressed.add(event.key())
 
     def keyReleaseEvent(self, event):
-        if event.key() in self.first_player_keys_pressed:
-            self.first_player_keys_pressed.remove(event.key())
+        if event.key() in self.players[0].keys_pressed:
+            self.players[0].keys_pressed.remove(event.key())
 
-        if event.key() in self.second_player_keys_pressed:
-            self.second_player_keys_pressed.remove(event.key())
+        if event.key() in self.players[1].keys_pressed:
+            self.players[1].keys_pressed.remove(event.key())
 
     # endregion

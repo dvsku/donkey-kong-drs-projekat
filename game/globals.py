@@ -46,3 +46,8 @@ class PaintObject(Enum):
     PLAYER_2 = 5
 
 
+class ClimbState(Enum):
+    NONE = 0
+    CLIMB = 1
+    FINISH = 2
+    START = 3

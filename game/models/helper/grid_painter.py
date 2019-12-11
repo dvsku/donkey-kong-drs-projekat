@@ -33,8 +33,8 @@ class GridPainter:
                 temp = Platform()
                 temp.setPos((i + x1) * SCENE_GRID_BLOCK_WIDTH + offset_x, y * SCENE_GRID_BLOCK_HEIGHT + offset_y)
                 temp.setZValue(2)
-                self.scene.test[i + x1][y] = temp
-                self.scene.addItem(self.scene.test[i + x1][y])
+                self.scene.game_objects[i + x1][y] = temp
+                self.scene.addItem(self.scene.game_objects[i + x1][y])
 
     def paint_vertical_line(self, x: int, y1: int, y2: int, offset_x: int, offset_y: int, item: PaintObject):
         if y2 < y1:
@@ -46,5 +46,5 @@ class GridPainter:
                 temp = Ladder()
                 temp.setPos(x * SCENE_GRID_BLOCK_WIDTH + offset_x, (i + y1) * SCENE_GRID_BLOCK_HEIGHT + offset_y)
                 temp.setZValue(2)
-                self.scene.test[x][i + y1] = temp
-                self.scene.addItem(self.scene.test[x][i + y1])
+                self.scene.game_objects[x][i + y1] = temp
+                self.scene.addItem(self.scene.game_objects[x][i + y1])

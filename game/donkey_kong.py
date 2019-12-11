@@ -1,9 +1,10 @@
-import sys
 import os
+import sys
+
+sys.path += [os.path.abspath('..')]
 from PyQt5.QtWidgets import QApplication
 from game.models.scenes.scene_control import SceneControl
 
-sys.path += [os.path.abspath('..')]
 
 class DonkeyKong(QApplication):
     def __init__(self, args):
