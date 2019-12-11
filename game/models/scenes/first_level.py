@@ -12,10 +12,13 @@ class FirstLevel(GameScene):
         self.grid_painter = GridPainter(self)
 
         self.grid_painter.paint_horizontal_line(0, 19, 14, 0, 0, PaintObject.PLATFORM)
-        self.grid_painter.paint_horizontal_line(3, 16, 10, 0, 0, PaintObject.PLATFORM)
+        self.grid_painter.paint_horizontal_line(3, 6, 10, 0, 0, PaintObject.PLATFORM)
+        self.grid_painter.paint_horizontal_line(8, 11, 10, 0, 0, PaintObject.PLATFORM)
+        self.grid_painter.paint_horizontal_line(13, 16, 10, 0, 0, PaintObject.PLATFORM)
         self.grid_painter.paint_horizontal_line(9, 10, 8, 0, 0, PaintObject.PLATFORM)
-        self.grid_painter.paint_horizontal_line(10, 15, 6, 0, 0, PaintObject.PLATFORM)
-        self.grid_painter.paint_horizontal_line(0, 15, 3, 0, 0, PaintObject.PLATFORM)
+        self.grid_painter.paint_horizontal_line(11, 15, 6, 0, 0, PaintObject.PLATFORM)
+        self.grid_painter.paint_horizontal_line(0, 7, 3, 0, 0, PaintObject.PLATFORM)
+        self.grid_painter.paint_horizontal_line(9, 14, 3, 0, 0, PaintObject.PLATFORM)
         self.grid_painter.paint_horizontal_line(5, 8, 6, 0, 0, PaintObject.PLATFORM)
 
         self.grid_painter.paint_vertical_line(2, 10, 13, 0, 0, PaintObject.LADDER)
