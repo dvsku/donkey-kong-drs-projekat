@@ -37,8 +37,6 @@ class SceneControl:
             self.current_scene = FirstLevel(self)
             self.view.setScene(self.current_scene)
 
-
-
     def cleanup(self):
         if isinstance(self.current_scene, GameScene) and self.current_scene is not None:
             self.current_scene.kill_thread = True

@@ -6,6 +6,7 @@ from PyQt5.QtWidgets import QApplication
 from game.models.scenes.scene_control import SceneControl
 
 
+
 class DonkeyKong(QApplication):
     def __init__(self, args):
         super().__init__(args)
