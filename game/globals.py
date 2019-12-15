@@ -23,20 +23,24 @@ class CCMethods(Enum):
     KILL_PROCESS = "end"
     EMPTY = ""
 
+
 class Direction(Enum):
     UP = 1
     DOWN = 2
     LEFT = 3
     RIGHT = 4
 
+
 class State(Enum):
     NONE = 0
     NORMAL = 1
     HIGHLIGHTED = 2
 
+
 class PaintDirection(Enum):
     HORIZONTAL = 1
     VERTICAL = 2
+
 
 class PaintObject(Enum):
     PLATFORM = 1
@@ -44,6 +48,7 @@ class PaintObject(Enum):
     PRINCESS = 3
     PLAYER_1 = 4
     PLAYER_2 = 5
+    HELP_SIGN = 6
 
 
 class ClimbState(Enum):

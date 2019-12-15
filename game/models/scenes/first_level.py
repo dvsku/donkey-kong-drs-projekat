@@ -8,6 +8,7 @@ class FirstLevel(GameScene):
         super().__init__(parent)
         self.draw_grid()
         self.toggle_grid()
+        # self.help_sign_visible()
 
         self.grid_painter = GridPainter(self)
 
@@ -38,7 +39,7 @@ class FirstLevel(GameScene):
         self.grid_painter.paint_one(19, 13, 13, 5, PaintObject.PLAYER_2)
 
         self.grid_painter.paint_one(5, 5, 0, 0, PaintObject.PRINCESS)
-
+        self.grid_painter.paint_one(6, 4, 0, 0, PaintObject.HELP_SIGN)
 
 
         # self.draw_item_to_scene(self.barrel_pool[0])

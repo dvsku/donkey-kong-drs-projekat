@@ -1,4 +1,5 @@
 from game.globals import *
+from game.models.game_objects.help_sign import HelpSign
 from game.models.game_objects.platform import Platform
 from game.models.game_objects.princess import Princess
 from game.models.game_objects.ladder import Ladder
@@ -22,6 +23,10 @@ class GridPainter:
             self.scene.players[1].item.setPos(x * SCENE_GRID_BLOCK_WIDTH + offset_x,
                                               y * SCENE_GRID_BLOCK_HEIGHT + offset_y)
             self.scene.addItem(self.scene.players[1].item)
+        elif item == PaintObject.HELP_SIGN:
+            self.scene.help_sign = HelpSign(x * SCENE_GRID_BLOCK_WIDTH + offset_x,
+                                            y * SCENE_GRID_BLOCK_HEIGHT + offset_y)
+            self.scene.addItem(self.scene.help_sign)
 
     def paint_horizontal_line(self, x1: int, x2: int, y: int, offset_x: int, offset_y: int, item: PaintObject):
         if x2 < x1:
