@@ -23,7 +23,7 @@ class GameScene(QGraphicsScene):
         self.grid = []
         self.grid_visible = True
         self.kill_thread = False
-        self.help_sign_show = True
+        # self.help_sign_show = True
 
         self.send_queue = mp.Queue()
         self.recv_queue = mp.Queue()
