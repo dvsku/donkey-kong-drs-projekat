@@ -8,7 +8,6 @@ class FirstLevel(GameScene):
         super().__init__(parent)
         self.draw_grid()
         self.toggle_grid()
-        # self.help_sign_visible()
 
         self.grid_painter = GridPainter(self)
 
