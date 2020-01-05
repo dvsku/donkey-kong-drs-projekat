@@ -21,7 +21,7 @@ class Gorilla(QObject):
         self.item.setZValue(4)
 
     def go_left(self):
-        self.moveBy(-10,0)
+        self.moveBy(-10, 0)
 
     def go_right(self):
-        self.moveBy(10,0)
+        self.moveBy(10, 0)
