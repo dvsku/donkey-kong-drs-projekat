@@ -27,6 +27,7 @@ class SecondPlayer(PlayableCharacter):
             QPixmap(IMAGES_DIR + "second_player/climb/climb_finish_1.png"),
             QPixmap(IMAGES_DIR + "second_player/climb/climb_finish_2.png")
         ]
+
         self.default_frame_left = QPixmap(IMAGES_DIR + "second_player/idle/idle_left.png")
         self.default_frame_right = QPixmap(IMAGES_DIR + "second_player/idle/idle_right.png")
         self.default_frame_up = QPixmap(IMAGES_DIR + "second_player/climb/climb_finish_3.png")

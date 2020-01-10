@@ -20,6 +20,8 @@ class CCMethods(Enum):
     END_OF_SCREEN_R = "check_end_of_screen_right"
     END_OF_SCREEN_V = "check_end_of_screen_vertical"
     BARREL_COLLISION = "check_barrel_collision"
+    PRINCESS_COLLISION = "check_princess_collision"
+    GORILLA_COLLISION = "check_gorilla_collision"
     KILL_PROCESS = "end"
     EMPTY = ""
 

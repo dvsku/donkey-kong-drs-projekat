@@ -10,8 +10,10 @@ from game.globals import *
 from game.models.abstract.playable_character import PlayableCharacter
 from game.models.game_objects.barrel import Barrel
 from game.models.game_objects.first_player import FirstPlayer
+from game.models.game_objects.gorilla import Gorilla
 from game.models.game_objects.ladder import Ladder
 from game.models.game_objects.platform import Platform
+from game.models.game_objects.princess import Princess
 from game.models.game_objects.second_player import SecondPlayer
 from game.models.helper.queue_message import Message
 
@@ -34,7 +36,7 @@ class GameScene(QGraphicsScene):
 
         self.barrel_pool = np.array([Barrel(self, i) for i in range(BARREL_POOL_SIZE)])
 
-        self.princess = None
+        self.princess = Princess(self, 0, 0)
         self.players = np.array([FirstPlayer(self, 0, 0), SecondPlayer(self, 0, 0)])
 
         self.game_objects = np.full(300, None).reshape(int(SCENE_WIDTH / SCENE_GRID_BLOCK_WIDTH),
@@ -114,6 +116,26 @@ class GameScene(QGraphicsScene):
 
         if msg.args[0]:
             barrel.delete.emit(barrel.index)
+
+    def check_princess_collision(self, princess: Princess, player: PlayableCharacter):
+        self.send_queue.put(Message(
+            CCMethods.PRINCESS_COLLISION,
+            princess.item.pos().x(),
+            princess.item.pos().y(),
+            player.item.pos().x(),
+            player.item.pos().y()
+        ))
+
+        # msg = self.recv_queue.get(True)
+
+    def check_gorilla_collision(self, gorilla: Gorilla, player: PlayableCharacter):
+        self.send_queue.put(Message(
+            CCMethods.GORILLA_COLLISION,
+            gorilla.item.pos().x(),
+            player.item.pos().x()
+        ))
+
+        # msg = self.recv_queue.get(True)
 
     def check_end_of_screen_left(self, x):
         self.send_queue.put(Message(

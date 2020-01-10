@@ -12,9 +12,10 @@ class GridPainter:
 
     def paint_one(self, x: int, y: int, offset_x: int, offset_y: int, item: PaintObject):
         if item == PaintObject.PRINCESS:
-            self.scene.princess = Princess(x * SCENE_GRID_BLOCK_WIDTH + offset_x,
-                                           y * SCENE_GRID_BLOCK_HEIGHT + offset_y)
-            self.scene.addItem(self.scene.princess)
+            self.scene.princess.item.setPos(x * SCENE_GRID_BLOCK_WIDTH + offset_x,
+                                            y * SCENE_GRID_BLOCK_HEIGHT + offset_y)
+            self.scene.addItem(self.scene.princess.item)
+
         elif item == PaintObject.PLAYER_1:
             self.scene.players[0].item.setPos(x * SCENE_GRID_BLOCK_WIDTH + offset_x,
                                               y * SCENE_GRID_BLOCK_HEIGHT + offset_y)

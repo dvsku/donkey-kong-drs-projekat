@@ -69,3 +69,40 @@ class CollisionControl(mp.Process):
             ret_val = False
 
         self.send_queue.put(Message(CCMethods.EMPTY, ret_val))
+
+    def check_princess_collision(self, pr_x, pr_y, p_x, p_y):
+        ret_val = True
+
+        # visina princeze i igraca je ista, smanjila sam je
+        princess_pos_y = pr_y
+        princess_pos_x_from = pr_x
+        # sirina princeze je 34
+        princess_pos_x_to = pr_x + 34
+
+        player_pos_y = p_y
+        player_pos_x_from = p_x
+        player_pos_x_to = p_x + 26
+
+        if princess_pos_y != player_pos_y:
+            ret_val = False
+
+        if (player_pos_x_from <= princess_pos_x_to) or (princess_pos_x_from <= player_pos_x_to):
+            ret_val = False
+
+        self.send_queue.put(Message(CCMethods.EMPTY, ret_val))
+
+    def check_gorilla_collision(self, g_x, p_x):
+        ret_val = True
+
+        gorilla_pos_x_from = g_x
+        # ovde je fora sto je gorila samo u jednom slucaju siroka 40
+        # odnosno kada seta, u ostalim slucajevima je manja
+        gorilla_pos_x_to = g_x + 40
+
+        player_pos_x_from = p_x
+        player_pos_x_to = p_x + 26
+
+        if (player_pos_x_from <= gorilla_pos_x_to) or (gorilla_pos_x_from <= player_pos_x_to):
+            ret_val = False
+
+        self.send_queue.put(Message(CCMethods.EMPTY, ret_val))
