@@ -2,6 +2,7 @@ import multiprocessing as mp
 import threading
 import time
 import numpy as np
+import random
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPen, QColor, QFont
 from PyQt5.QtWidgets import QGraphicsScene, QGraphicsTextItem
@@ -18,7 +19,6 @@ from game.models.game_objects.second_player import SecondPlayer
 from game.models.helper.queue_message import Message
 from game.models.game_objects.lives import Lives
 
-
 class GameScene(QGraphicsScene):
     def __init__(self, parent):
         super().__init__()
@@ -34,10 +34,11 @@ class GameScene(QGraphicsScene):
         self.barrel_thread = threading.Thread(target=self.barrel_thread_do_work)
         self.players_thread = threading.Thread(target=self.player_thread_do_work)
         self.players_falling_thread = threading.Thread(target=self.player_falling_thread_do_work)
+        self.gorilla_thread = threading.Thread(target=self.gorilla_thread_do_work)
 
         self.barrel_pool = np.array([Barrel(self, i) for i in range(BARREL_POOL_SIZE)])
 
-        self.gorilla = Gorilla(0, 0)
+        self.gorilla = Gorilla(self, 0, 0)
         self.princess = Princess(self, 0, 0)
         self.players = np.array([FirstPlayer(self, 0, 0), SecondPlayer(self, 0, 0)])
 
@@ -347,6 +348,60 @@ class GameScene(QGraphicsScene):
 
     # endregion
 
+    # region Gorilla Thread
+
+    def gorilla_thread_do_work(self):
+        count = 0
+        while not self.kill_thread:
+            count += 1
+            if count % 5 == 0:
+                self.gorilla_throwing_barrel()
+            self.gorilla_thread_move_gorilla(self.gorilla)
+            time.sleep(0.2)
+
+    def gorilla_thread_reset_animation(self, gorilla: Gorilla):
+        if gorilla.latest_direction == gorilla.randDirection[0]:
+            gorilla.animation_reset_signal.emit(Direction.LEFT)
+        elif gorilla.latest_direction == gorilla.randDirection[1]:
+            gorilla.animation_reset_signal.emit(Direction.RIGHT)
+
+    def determinate_direction(self):
+        if self.gorilla.current_direction == Direction.LEFT:
+            self.gorilla.current_direction = Direction.RIGHT
+        elif self.gorilla.current_direction == Direction.RIGHT:
+            self.gorilla.current_direction = Direction.LEFT
+
+    def gorilla_thread_move_gorilla(self, gorilla: Gorilla):
+        self.gorilla.current_direction = random.choice(self.gorilla.randDirection)
+        gorilla_x = gorilla.item.x()
+        x = int(gorilla_x / SCENE_GRID_BLOCK_WIDTH)
+        if gorilla.current_direction == Direction.LEFT:
+            if not x <= 11:
+                self.gorilla_thread_move_dir(Direction.LEFT)
+            else:
+                self.gorilla_thread_move_dir(Direction.RIGHT)
+        else:
+            if not x >= 15:
+                self.gorilla_thread_move_dir(Direction.RIGHT)
+            else:
+                self.gorilla_thread_move_dir(Direction.LEFT)
+
+    def gorilla_thread_move_dir(self, direction: Direction):
+        if self.gorilla.current_direction == self.gorilla.latest_direction:
+            self.gorilla.move_signal.emit(direction)
+        else:
+            self.gorilla.animation_reset_signal.emit(direction)
+            self.gorilla.move_signal.emit(direction)
+            self.gorilla.latest_direction = self.gorilla.current_direction
+
+    def gorilla_throwing_barrel(self):
+        self.gorilla.throw_start_signal.emit()
+        #treba da se iscrta barell
+        #self.barrel_thread_do_work()
+        time.sleep(1)
+        self.gorilla.throw_finish_signal.emit()
+
+    # endregion
     # region KeyPressEvents
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_M:

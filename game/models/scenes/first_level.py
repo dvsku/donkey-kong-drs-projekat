@@ -43,14 +43,9 @@ class FirstLevel(GameScene):
         self.grid_painter.paint_one(1, 0, 0, 0, PaintObject.LIVES)
         self.grid_painter.paint_one(16, 0, 0, 0, PaintObject.LIVES)
 
-        self.grid_painter.paint_one(10, 13, 0, 0, PaintObject.GORILLA)
-
-
-
-        # self.draw_item_to_scene(self.barrel_pool[0])
-        # self.draw_item_to_scene(self.barrel_pool[1])
-        # self.draw_item_to_scene(self.barrel_pool[2])
+        self.grid_painter.paint_one(13, 5, 0, 0, PaintObject.GORILLA)
 
         self.barrel_thread.start()
         self.players_thread.start()
         self.players_falling_thread.start()
+        self.gorilla_thread.start()

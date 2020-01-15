@@ -1,28 +1,61 @@
-from PyQt5.QtCore import QObject
+from PyQt5.QtCore import QObject, pyqtSignal
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QGraphicsPixmapItem
-from game.globals import IMAGES_DIR
+from game.globals import IMAGES_DIR, Direction
+from game.models.game_objects import barrel
 
 
 class Gorilla(QObject):
-    def __init__(self, x, y):
+    move_signal = pyqtSignal(Direction)
+    animation_reset_signal = pyqtSignal(Direction)
+    throw_start_signal = pyqtSignal()
+    throw_finish_signal = pyqtSignal()
 
+    def __init__(self, parent, x, y):
         super().__init__()
-        #self.__parent__ = parent
+        self.__parent__ = parent
         self.item = QGraphicsPixmapItem()
-        self.is_drawn = False
+        self.falling = False
 
-        self.current_animation_index = 0
-        self.animation_frames = [
-            QPixmap(IMAGES_DIR + "gorilla/move/move_1.png"),
-            QPixmap(IMAGES_DIR + "gorilla/move/move_2.png")
-        ]
+        self.randDirection = [Direction.LEFT, Direction.RIGHT]
+        self.latest_direction = None
+        self.current_direction = None
+
+        self.move_signal[Direction].connect(self.move)
+        self.animation_reset_signal[Direction].connect(self.reset_animation)
+        self.throw_start_signal.connect(self.throw_start)
+        self.throw_finish_signal.connect(self.throw_finish)
+        self.current_frame_index = 0
+        self.movement_left = QPixmap(IMAGES_DIR + 'gorilla/move/move_1.png')
+        self.movement_right = QPixmap(IMAGES_DIR + "gorilla/move/move_2.png")
+        self.throw_frames = [
+            QPixmap(IMAGES_DIR + "gorilla/throw/throw_down.png"),
+            QPixmap(IMAGES_DIR + "gorilla/throw/throw_up.png")
+            ]
+        self.item.setPixmap(self.movement_left)
+   #     self.item.setZValue(4)
         self.item.setPos(x, y)
-        self.item.setPixmap(self.animation_frames[0])
-        self.item.setZValue(4)
+
+    def reset_animation(self, direction: Direction):
+        if direction == Direction.LEFT:
+            self.item.setPixmap(self.movement_left)
+        elif direction == Direction.RIGHT:
+            self.item.setPixmap(self.movement_right)
+
+    def move(self, direction: Direction):
+        if direction == Direction.LEFT:
+            self.go_left()
+        elif direction == Direction.RIGHT:
+            self.go_right()
 
     def go_left(self):
-        self.moveBy(-10, 0)
+        self.item.moveBy(-40, 0)
 
     def go_right(self):
-        self.moveBy(10, 0)
+        self.item.moveBy(40, 0)
+
+    def throw_start(self):
+        self.item.setPixmap(self.throw_frames[0])
+
+    def throw_finish(self):
+        self.item.setPixmap(self.throw_frames[1])
