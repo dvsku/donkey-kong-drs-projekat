@@ -34,6 +34,8 @@ class FirstLevel(GameScene):
         self.grid_painter.paint_vertical_line(15, 3, 5, 0, 0, PaintObject.LADDER)
         self.grid_painter.paint_vertical_line(8, 3, 5, 0, 0, PaintObject.LADDER)
 
+        self.grid_painter.paint_vertical_line(16, 6, 9, 0, 0, PaintObject.LADDER)
+
         self.grid_painter.paint_one(0, 13, 0, 5, PaintObject.PLAYER_1)
         self.grid_painter.paint_one(19, 13, 13, 5, PaintObject.PLAYER_2)
 
