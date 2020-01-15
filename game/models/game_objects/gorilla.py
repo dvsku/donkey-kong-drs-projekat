@@ -5,10 +5,10 @@ from game.globals import IMAGES_DIR
 
 
 class Gorilla(QObject):
-    def __init__(self, parent):
+    def __init__(self, x, y):
 
         super().__init__()
-        self.__parent__ = parent
+        #self.__parent__ = parent
         self.item = QGraphicsPixmapItem()
         self.is_drawn = False
 
@@ -17,6 +17,7 @@ class Gorilla(QObject):
             QPixmap(IMAGES_DIR + "gorilla/move/move_1.png"),
             QPixmap(IMAGES_DIR + "gorilla/move/move_2.png")
         ]
+        self.item.setPos(x, y)
         self.item.setPixmap(self.animation_frames[0])
         self.item.setZValue(4)
 

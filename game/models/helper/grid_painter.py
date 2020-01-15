@@ -4,6 +4,8 @@ from game.models.game_objects.platform import Platform
 from game.models.game_objects.princess import Princess
 from game.models.game_objects.ladder import Ladder
 from game.models.abstract.game_scene import GameScene
+from game.models.game_objects.lives import Lives
+from game.models.game_objects.gorilla import Gorilla
 
 
 class GridPainter:
@@ -28,6 +30,14 @@ class GridPainter:
             self.scene.help_sign = HelpSign(x * SCENE_GRID_BLOCK_WIDTH + offset_x,
                                             y * SCENE_GRID_BLOCK_HEIGHT + offset_y)
             self.scene.addItem(self.scene.help_sign)
+        elif item == PaintObject.LIVES:
+            self.scene.lives = Lives(x * SCENE_GRID_BLOCK_WIDTH + offset_x,
+                                     y * SCENE_GRID_BLOCK_HEIGHT + offset_y)
+            self.scene.addItem(self.scene.lives.item)
+        elif item == PaintObject.GORILLA:
+            self.scene.gorilla = Gorilla(x * SCENE_GRID_BLOCK_WIDTH + offset_x,
+                                     y * SCENE_GRID_BLOCK_HEIGHT + offset_y)
+            self.scene.addItem(self.scene.gorilla.item)
 
     def paint_horizontal_line(self, x1: int, x2: int, y: int, offset_x: int, offset_y: int, item: PaintObject):
         if x2 < x1:

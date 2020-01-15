@@ -3,6 +3,7 @@ from PyQt5.QtGui import QBrush
 from PyQt5.QtWidgets import QGraphicsView
 from game.globals import WINDOW_WIDTH, WINDOW_HEIGHT, CCMethods
 from game.models.abstract.game_scene import GameScene
+from game.models.game_objects.lives import Lives
 from game.models.helper.queue_message import Message
 from game.models.scenes.first_level import FirstLevel
 from game.models.scenes.main_menu import MainMenu
@@ -13,6 +14,9 @@ class SceneControl:
         self.__parent__ = parent
 
         self.current_scene = None
+
+        self.lives1 = Lives(0, 0)
+        self.lives2 = Lives(0, 0)
 
         self.view = QGraphicsView()
         self.view.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
