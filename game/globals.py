@@ -51,6 +51,8 @@ class PaintObject(Enum):
     PLAYER_1 = 4
     PLAYER_2 = 5
     HELP_SIGN = 6
+    LIVES = 7
+    GORILLA = 8
 
 
 class ClimbState(Enum):

@@ -40,6 +40,12 @@ class FirstLevel(GameScene):
         self.grid_painter.paint_one(5, 5, 0, 0, PaintObject.PRINCESS)
         self.grid_painter.paint_one(6, 4, 0, 0, PaintObject.HELP_SIGN)
 
+        self.grid_painter.paint_one(1, 0, 0, 0, PaintObject.LIVES)
+        self.grid_painter.paint_one(16, 0, 0, 0, PaintObject.LIVES)
+
+        self.grid_painter.paint_one(10, 13, 0, 0, PaintObject.GORILLA)
+
+
 
         # self.draw_item_to_scene(self.barrel_pool[0])
         # self.draw_item_to_scene(self.barrel_pool[1])
