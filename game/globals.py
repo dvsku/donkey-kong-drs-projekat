@@ -22,6 +22,7 @@ class CCMethods(Enum):
     BARREL_COLLISION = "check_barrel_collision"
     PRINCESS_COLLISION = "check_princess_collision"
     GORILLA_COLLISION = "check_gorilla_collision"
+    ADD_ENDPOINT = "add_endpoint"
     KILL_PROCESS = "end"
     EMPTY = ""
 
@@ -51,8 +52,9 @@ class PaintObject(Enum):
     PLAYER_1 = 4
     PLAYER_2 = 5
     HELP_SIGN = 6
-    LIVES = 7
-    GORILLA = 8
+    LIVES_PLAYER_1 = 7
+    LIVES_PLAYER_2 = 8
+    GORILLA = 9
 
 
 class ClimbState(Enum):

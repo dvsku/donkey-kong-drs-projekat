@@ -21,7 +21,7 @@ class MainMenu(InfoScene):
         self.logo.setPos((SCENE_WIDTH - 600) / 2, 50)
 
         self.buttons = [
-            Button(self.__parent__.load_level, 1, (SCENE_WIDTH - 250) / 2, SCENE_HEIGHT - 250,
+            Button(self.__parent__.start_game, None, (SCENE_WIDTH - 250) / 2, SCENE_HEIGHT - 250,
                    IMAGES_DIR + "menu/start_normal.png",
                    IMAGES_DIR + "menu/start_highlighted.png", State.HIGHLIGHTED),
             Button(self.__parent__.close_game, None, (SCENE_WIDTH - 200) / 2, SCENE_HEIGHT - 175,

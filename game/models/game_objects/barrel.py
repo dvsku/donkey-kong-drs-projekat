@@ -5,8 +5,9 @@ from game.globals import IMAGES_DIR
 
 
 class Barrel(QObject):
-    delete = pyqtSignal(int)
-    modify = pyqtSignal()
+    draw_signal = pyqtSignal()
+    remove_signal = pyqtSignal()
+    fall_signal = pyqtSignal()
 
     def __init__(self, parent, index):
         super().__init__()
@@ -23,8 +24,17 @@ class Barrel(QObject):
         self.item.setPixmap(self.animation_frames[0])
         self.item.setZValue(4)
 
-        self.delete[int].connect(self.__parent__.remove_element_from_scene)
-        self.modify.connect(self.go_down)
+        self.draw_signal.connect(self.draw)
+        self.remove_signal.connect(self.remove)
+        self.fall_signal.connect(self.go_down)
+
+    def draw(self):
+        self.is_drawn = True
+        self.__parent__.draw_barrel(self.index)
+
+    def remove(self):
+        self.is_drawn = False
+        self.__parent__.remove_barrel(self.index)
 
     def animate(self):
         count = len(self.animation_frames)

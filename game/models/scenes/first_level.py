@@ -9,6 +9,9 @@ class FirstLevel(GameScene):
         self.draw_grid()
         self.toggle_grid()
 
+        self.player_1_position = [0, 13]
+        self.player_2_position = [19, 13]
+
         self.grid_painter = GridPainter(self)
 
         self.grid_painter.paint_horizontal_line(0, 19, 14, 0, 0, PaintObject.PLATFORM)
@@ -42,10 +45,10 @@ class FirstLevel(GameScene):
         self.grid_painter.paint_one(5, 5, 0, 0, PaintObject.PRINCESS)
         self.grid_painter.paint_one(6, 4, 0, 0, PaintObject.HELP_SIGN)
 
-        self.grid_painter.paint_one(1, 0, 0, 0, PaintObject.LIVES)
-        self.grid_painter.paint_one(16, 0, 0, 0, PaintObject.LIVES)
+        self.grid_painter.paint_one(1, 0, 0, 0, PaintObject.LIVES_PLAYER_1)
+        self.grid_painter.paint_one(16, 0, 0, 0, PaintObject.LIVES_PLAYER_2)
 
-        self.grid_painter.paint_one(13, 5, 0, 0, PaintObject.GORILLA)
+        self.grid_painter.paint_one(7, 2, 0, -15, PaintObject.GORILLA)
 
         self.barrel_thread.start()
         self.players_thread.start()

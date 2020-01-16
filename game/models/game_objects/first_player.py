@@ -1,6 +1,6 @@
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap
-from game.globals import IMAGES_DIR
+from game.globals import IMAGES_DIR, SCENE_GRID_BLOCK_WIDTH, SCENE_GRID_BLOCK_HEIGHT
 from game.models.abstract.playable_character import PlayableCharacter
 
 
@@ -33,3 +33,11 @@ class FirstPlayer(PlayableCharacter):
         self.item.setPixmap(self.default_frame_right)
         self.item.setZValue(3)
         self.item.setPos(x, y)
+
+    def lose_life(self):
+        self.__parent__.player_lose_life(0)
+        if self.alive:
+            self.item.setPos(self.__parent__.player_1_position[0] * SCENE_GRID_BLOCK_WIDTH,
+                             self.__parent__.player_1_position[1] * SCENE_GRID_BLOCK_HEIGHT + 5)
+        else:
+            self.__parent__.removeItem(self.item)

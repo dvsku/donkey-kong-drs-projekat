@@ -2,8 +2,6 @@ from PyQt5.QtCore import QObject, pyqtSignal
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QGraphicsPixmapItem
 from game.globals import IMAGES_DIR, Direction
-from game.models.game_objects import barrel
-
 
 class Gorilla(QObject):
     move_signal = pyqtSignal(Direction)
@@ -15,7 +13,6 @@ class Gorilla(QObject):
         super().__init__()
         self.__parent__ = parent
         self.item = QGraphicsPixmapItem()
-        self.falling = False
 
         self.randDirection = [Direction.LEFT, Direction.RIGHT]
         self.latest_direction = None
@@ -26,21 +23,32 @@ class Gorilla(QObject):
         self.throw_start_signal.connect(self.throw_start)
         self.throw_finish_signal.connect(self.throw_finish)
         self.current_frame_index = 0
-        self.movement_left = QPixmap(IMAGES_DIR + 'gorilla/move/move_1.png')
-        self.movement_right = QPixmap(IMAGES_DIR + "gorilla/move/move_2.png")
+        self.movement_frames = [
+            QPixmap(IMAGES_DIR + 'gorilla/move/move_1.png'),
+            QPixmap(IMAGES_DIR + "gorilla/move/move_2.png")
+        ]
         self.throw_frames = [
             QPixmap(IMAGES_DIR + "gorilla/throw/throw_down.png"),
             QPixmap(IMAGES_DIR + "gorilla/throw/throw_up.png")
             ]
-        self.item.setPixmap(self.movement_left)
-   #     self.item.setZValue(4)
+        self.item.setPixmap(self.movement_frames[0])
+        # self.item.setZValue(4)
         self.item.setPos(x, y)
+
+    def animate(self):
+        count = len(self.movement_frames)
+        if self.current_frame_index + 1 > count - 1:
+            self.current_frame_index = 0
+        else:
+            self.current_frame_index = self.current_frame_index + 1
+
+        self.item.setPixmap(self.movement_frames[self.current_frame_index])
 
     def reset_animation(self, direction: Direction):
         if direction == Direction.LEFT:
-            self.item.setPixmap(self.movement_left)
+            self.item.setPixmap(self.movement_frames[0])
         elif direction == Direction.RIGHT:
-            self.item.setPixmap(self.movement_right)
+            self.item.setPixmap(self.movement_frames[1])
 
     def move(self, direction: Direction):
         if direction == Direction.LEFT:
@@ -49,9 +57,11 @@ class Gorilla(QObject):
             self.go_right()
 
     def go_left(self):
+        self.animate()
         self.item.moveBy(-40, 0)
 
     def go_right(self):
+        self.animate()
         self.item.moveBy(40, 0)
 
     def throw_start(self):

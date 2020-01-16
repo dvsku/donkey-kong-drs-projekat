@@ -6,7 +6,6 @@ import random
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPen, QColor, QFont
 from PyQt5.QtWidgets import QGraphicsScene, QGraphicsTextItem
-from game.collision_control import CollisionControl
 from game.globals import *
 from game.models.abstract.playable_character import PlayableCharacter
 from game.models.game_objects.barrel import Barrel
@@ -17,7 +16,6 @@ from game.models.game_objects.platform import Platform
 from game.models.game_objects.princess import Princess
 from game.models.game_objects.second_player import SecondPlayer
 from game.models.helper.queue_message import Message
-from game.models.game_objects.lives import Lives
 
 class GameScene(QGraphicsScene):
     def __init__(self, parent):
@@ -27,9 +25,8 @@ class GameScene(QGraphicsScene):
         self.grid_visible = True
         self.kill_thread = False
 
-        self.send_queue = mp.Queue()
-        self.recv_queue = mp.Queue()
-        CollisionControl(self.send_queue, self.recv_queue)
+        self.player_1_position = []
+        self.player_2_position = []
 
         self.barrel_thread = threading.Thread(target=self.barrel_thread_do_work)
         self.players_thread = threading.Thread(target=self.player_thread_do_work)
@@ -37,27 +34,38 @@ class GameScene(QGraphicsScene):
         self.gorilla_thread = threading.Thread(target=self.gorilla_thread_do_work)
 
         self.barrel_pool = np.array([Barrel(self, i) for i in range(BARREL_POOL_SIZE)])
-
         self.gorilla = Gorilla(self, 0, 0)
         self.princess = Princess(self, 0, 0)
         self.players = np.array([FirstPlayer(self, 0, 0), SecondPlayer(self, 0, 0)])
 
-
         self.game_objects = np.full(300, None).reshape(int(SCENE_WIDTH / SCENE_GRID_BLOCK_WIDTH),
                                                        int(SCENE_HEIGHT / SCENE_GRID_BLOCK_HEIGHT))
 
+    def player_lose_life(self, index):
+        self.__parent__.lives[index].remove_life()
+        if self.__parent__.lives[index].remaining == 0:
+            self.players[index].alive = False
+
+    def add_cc_endpoint(self):
+        parent, child = mp.Pipe()
+        self.__parent__.cc_endpoint.send(Message(CCMethods.ADD_ENDPOINT, child))
+        return parent
+
     # region Barrels
 
-    def draw_item_to_scene(self, item):
-        item.is_drawn = True
-        self.addItem(item.item)
+    def draw_barrel(self, index):
+        self.addItem(self.barrel_pool[index].item)
 
-    def remove_item_from_scene(self, item):
-        item.is_drawn = False
-        self.removeItem(item.item)
+    def remove_barrel(self, index):
+        self.removeItem(self.barrel_pool[index].item)
 
-    def remove_element_from_scene(self, index: int):
-        self.remove_item_from_scene(self.barrel_pool[index])
+    def get_free_barrel(self):
+        index = -1
+        for i, barrel in enumerate(self.barrel_pool):
+            if not barrel.is_drawn:
+                index = i
+
+        return index
 
     # endregion
 
@@ -97,76 +105,81 @@ class GameScene(QGraphicsScene):
     # endregion
 
     # region Collision
-    def check_barrel_end_of_screen(self, barrel: Barrel):
-        self.send_queue.put(Message(
+    def check_barrel_end_of_screen(self, pipe_endpoint, barrel: Barrel):
+        pipe_endpoint.send(Message(
             CCMethods.END_OF_SCREEN_V,
             barrel.item.pos().y(),
         ))
-        msg = self.recv_queue.get(True)
+        msg = pipe_endpoint.recv()
 
         if msg.args[0]:
-            barrel.delete.emit(barrel.index)
+            barrel.remove_signal.emit()
 
-    def check_barrel_collision(self, barrel: Barrel, player: PlayableCharacter):
-        self.send_queue.put(Message(
+    def check_barrel_collision(self, pipe_endpoint, barrel: Barrel, player: PlayableCharacter):
+        pipe_endpoint.send(Message(
             CCMethods.BARREL_COLLISION,
             barrel.item.pos().x(),
             barrel.item.pos().y(),
             barrel.item.boundingRect().width(),
+            barrel.item.boundingRect().height(),
             player.item.pos().x(),
-            player.item.pos().y()
+            player.item.pos().y(),
+            player.item.boundingRect().width(),
+            player.item.boundingRect().height()
         ))
-        msg = self.recv_queue.get(True)
+        msg = pipe_endpoint.recv()
 
         if msg.args[0]:
-            barrel.delete.emit(barrel.index)
-            if isinstance(player, FirstPlayer):
-                self.__parent__.lives1.remove_signal.emit()
-            elif isinstance(player, SecondPlayer):
-                self.__parent__.lives2.remove_signal.emit()
+            barrel.remove_signal.emit()
+            player.lose_life_signal.emit()
 
-
-
-
-    def check_princess_collision(self, princess: Princess, player: PlayableCharacter):
-        self.send_queue.put(Message(
+    def check_princess_collision(self, pipe_endpoint, princess: Princess, player: PlayableCharacter):
+        pipe_endpoint.send(Message(
             CCMethods.PRINCESS_COLLISION,
             princess.item.pos().x(),
             princess.item.pos().y(),
+            princess.item.boundingRect().width(),
+            princess.item.boundingRect().height(),
             player.item.pos().x(),
-            player.item.pos().y()
+            player.item.pos().y(),
+            player.item.boundingRect().width(),
+            player.item.boundingRect().height()
         ))
 
-        # msg = self.recv_queue.get(True)
+        msg = pipe_endpoint.recv()
+        return msg.args[0]
 
-    def check_gorilla_collision(self, gorilla: Gorilla, player: PlayableCharacter):
-        self.send_queue.put(Message(
+    def check_gorilla_collision(self, pipe_endpoint, gorilla: Gorilla, player: PlayableCharacter):
+        pipe_endpoint.send(Message(
             CCMethods.GORILLA_COLLISION,
             gorilla.item.pos().x(),
-            player.item.pos().x()
+            gorilla.item.pos().y(),
+            gorilla.item.boundingRect().width(),
+            gorilla.item.boundingRect().height(),
+            player.item.pos().x(),
+            player.item.pos().y(),
+            player.item.boundingRect().width(),
+            player.item.boundingRect().height()
         ))
-        msg = self.recv_queue.get(True)
+        msg = pipe_endpoint.recv()
         if msg.args[0]:
-            if isinstance(player, FirstPlayer):
-                self.__parent__.lives1.remove_signal.emit()
-            elif isinstance(player, SecondPlayer):
-                self.__parent__.lives2.remove_signal.emit()
+            player.lose_life_signal.emit()
 
-    def check_end_of_screen_left(self, x):
-        self.send_queue.put(Message(
+    def check_end_of_screen_left(self, pipe_endpoint, x):
+        pipe_endpoint.send(Message(
             CCMethods.END_OF_SCREEN_L,
             x,
         ))
-        msg = self.recv_queue.get()
+        msg = pipe_endpoint.recv()
 
         return msg.args[0]
 
-    def check_end_of_screen_right(self, x):
-        self.send_queue.put(Message(
+    def check_end_of_screen_right(self, pipe_endpoint, x):
+        pipe_endpoint.send(Message(
             CCMethods.END_OF_SCREEN_R,
             x,
         ))
-        msg = self.recv_queue.get()
+        msg = pipe_endpoint.recv()
 
         return msg.args[0]
 
@@ -245,31 +258,49 @@ class GameScene(QGraphicsScene):
 
     # region Barrel Thread
     def barrel_thread_do_work(self):
+        thread_endpoint = self.add_cc_endpoint()
         while not self.kill_thread:
             for i in range(len(self.barrel_pool)):
                 if self.barrel_pool[i].is_drawn:
-                    self.barrel_pool[i].modify.emit()
-                    self.check_barrel_end_of_screen(self.barrel_pool[i])
-                    self.check_barrel_collision(self.barrel_pool[i], self.players[0])
-                    self.check_barrel_collision(self.barrel_pool[i], self.players[1])
+                    self.barrel_pool[i].fall_signal.emit()
+                    self.check_barrel_end_of_screen(thread_endpoint, self.barrel_pool[i])
+                    if self.players[0].alive:
+                        self.check_barrel_collision(thread_endpoint, self.barrel_pool[i], self.players[0])
+                    if self.players[1].alive:
+                        self.check_barrel_collision(thread_endpoint, self.barrel_pool[i], self.players[1])
 
             time.sleep(0.025)
+
+        thread_endpoint.close()
 
     # endregion
 
     # region Player Thread
     def player_thread_do_work(self):
+        thread_endpoint = self.add_cc_endpoint()
         while not self.kill_thread:
-            for i in range(len(self.players)):
-                if not self.players[i].falling:
-                    if len(self.players[i].keys_pressed) != 0:
-                        self.player_thread_move_player(self.players[i])
-                    else:
-                        self.player_thread_reset_animation(self.players[i])
+            self.check_end_game()
+            for i, player in enumerate(self.players):
+                if player.alive:
+                    self.check_gorilla_collision(thread_endpoint, self.gorilla, player)
+                    if self.check_princess_collision(thread_endpoint, self.princess, player):
+                        self.__parent__.load_next_level()
+                    if not player.falling:
+                        if len(player.keys_pressed) != 0:
+                            self.player_thread_move_player(thread_endpoint, player)
+                        else:
+                            self.player_thread_reset_animation(player)
 
             time.sleep(0.03)
 
-    def player_thread_move_player(self, player: PlayableCharacter):
+        thread_endpoint.close()
+
+    def check_end_game(self):
+        if self.players[0].alive is False and self.players[1].alive is False:
+            self.kill_thread = True
+            self.__parent__.end_game_signal.emit()
+
+    def player_thread_move_player(self, pipe_endpoint, player: PlayableCharacter):
         x = player.item.pos().x()
         y = player.item.pos().y()
 
@@ -304,7 +335,7 @@ class GameScene(QGraphicsScene):
         # left key
         elif player.action_keys[2] in player.keys_pressed:
             if not player.climbing:
-                if self.check_end_of_screen_left(x):
+                if self.check_end_of_screen_left(pipe_endpoint, x):
                     player.animation_reset_signal.emit(Direction.LEFT)
                 else:
                     player.move_signal.emit(Direction.LEFT)
@@ -312,7 +343,7 @@ class GameScene(QGraphicsScene):
         # right key
         elif player.action_keys[3] in player.keys_pressed:
             if not player.climbing:
-                if self.check_end_of_screen_right(x):
+                if self.check_end_of_screen_right(pipe_endpoint, x):
                     player.animation_reset_signal.emit(Direction.RIGHT)
                 else:
                     player.move_signal.emit(Direction.RIGHT)
@@ -325,6 +356,7 @@ class GameScene(QGraphicsScene):
             player.animation_reset_signal.emit(Direction.RIGHT)
 
     def player_falling_thread_do_work(self):
+        thread_endpoint = self.add_cc_endpoint()
         while not self.kill_thread:
             for i in range(len(self.players)):
                 player_x = self.players[i].item.pos().x()
@@ -346,6 +378,8 @@ class GameScene(QGraphicsScene):
 
             time.sleep(0.015)
 
+        thread_endpoint.close()
+
     # endregion
 
     # region Gorilla Thread
@@ -356,52 +390,42 @@ class GameScene(QGraphicsScene):
             count += 1
             if count % 5 == 0:
                 self.gorilla_throwing_barrel()
-            self.gorilla_thread_move_gorilla(self.gorilla)
+                count = 0
+                continue
+
+            self.gorilla_thread_move_gorilla()
             time.sleep(0.2)
 
-    def gorilla_thread_reset_animation(self, gorilla: Gorilla):
-        if gorilla.latest_direction == gorilla.randDirection[0]:
-            gorilla.animation_reset_signal.emit(Direction.LEFT)
-        elif gorilla.latest_direction == gorilla.randDirection[1]:
-            gorilla.animation_reset_signal.emit(Direction.RIGHT)
+    def gorilla_thread_reset_animation(self):
+        if self.gorilla.latest_direction == self.gorilla.randDirection[0]:
+            self.gorilla.animation_reset_signal.emit(Direction.LEFT)
+        elif self.gorilla.latest_direction == self.gorilla.randDirection[1]:
+            self.gorilla.animation_reset_signal.emit(Direction.RIGHT)
 
-    def determinate_direction(self):
-        if self.gorilla.current_direction == Direction.LEFT:
-            self.gorilla.current_direction = Direction.RIGHT
-        elif self.gorilla.current_direction == Direction.RIGHT:
-            self.gorilla.current_direction = Direction.LEFT
-
-    def gorilla_thread_move_gorilla(self, gorilla: Gorilla):
-        self.gorilla.current_direction = random.choice(self.gorilla.randDirection)
-        gorilla_x = gorilla.item.x()
-        x = int(gorilla_x / SCENE_GRID_BLOCK_WIDTH)
-        if gorilla.current_direction == Direction.LEFT:
-            if not x <= 11:
-                self.gorilla_thread_move_dir(Direction.LEFT)
+    def gorilla_thread_move_gorilla(self):
+        current_direction = random.choice(self.gorilla.randDirection)
+        x = int(self.gorilla.item.x() / SCENE_GRID_BLOCK_WIDTH)
+        if current_direction == Direction.LEFT:
+            if not x <= 0:
+                self.gorilla.move_signal.emit(Direction.LEFT)
             else:
-                self.gorilla_thread_move_dir(Direction.RIGHT)
+                self.gorilla.move_signal.emit(Direction.RIGHT)
         else:
             if not x >= 15:
-                self.gorilla_thread_move_dir(Direction.RIGHT)
+                self.gorilla.move_signal.emit(Direction.RIGHT)
             else:
-                self.gorilla_thread_move_dir(Direction.LEFT)
-
-    def gorilla_thread_move_dir(self, direction: Direction):
-        if self.gorilla.current_direction == self.gorilla.latest_direction:
-            self.gorilla.move_signal.emit(direction)
-        else:
-            self.gorilla.animation_reset_signal.emit(direction)
-            self.gorilla.move_signal.emit(direction)
-            self.gorilla.latest_direction = self.gorilla.current_direction
+                self.gorilla.move_signal.emit(Direction.LEFT)
 
     def gorilla_throwing_barrel(self):
         self.gorilla.throw_start_signal.emit()
-        #treba da se iscrta barell
-        #self.barrel_thread_do_work()
-        time.sleep(1)
-        self.gorilla.throw_finish_signal.emit()
-
+        index = self.get_free_barrel()
+        if index != -1:
+            self.barrel_pool[index].item.setPos(self.gorilla.item.x() + 14, self.gorilla.item.y() + 40)
+            self.barrel_pool[index].draw_signal.emit()
+        time.sleep(0.8)
+        self.gorilla_thread_reset_animation()
     # endregion
+
     # region KeyPressEvents
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_M:

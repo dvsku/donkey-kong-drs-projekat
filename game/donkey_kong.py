@@ -12,10 +12,7 @@ class DonkeyKong(QApplication):
 
         self.setApplicationName("Donkey Kong")
         self.sceneManager = SceneControl(self)
-        self.aboutToQuit.connect(self.cleanup)
-
-    def cleanup(self):
-        self.sceneManager.cleanup()
+        self.aboutToQuit.connect(self.sceneManager.closing_cleanup)
 
     def close_game(self):
         self.quit()

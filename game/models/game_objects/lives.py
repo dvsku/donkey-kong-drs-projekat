@@ -7,25 +7,17 @@ from game.globals import IMAGES_DIR
 class Lives(QObject):
     remove_signal = pyqtSignal()
 
-    def __init__(self, x, y):
+    def __init__(self):
         super().__init__()
         self.item = QGraphicsPixmapItem()
         self.item.setPixmap(QPixmap(IMAGES_DIR + "lives/3zivota.png"))
+        self.remaining = 3
 
-        self.broj = 3
-
-        self.item.setPos(x, y)
-
-        # self.lives2 = QPixmap(IMAGES_DIR + "lives/2zivota.png")
-        #self.lives1 = QPixmap(IMAGES_DIR + "lives/1zivot.png")
-       # self.lives0 = QPixmap(IMAGES_DIR + "lives/0zivota.png")
-
-    def remove_lives(self):
-        if self.broj == 2:
+    def remove_life(self):
+        self.remaining -= 1
+        if self.remaining == 2:
             self.item.setPixmap(QPixmap(IMAGES_DIR + "lives/2zivota.png"))
-        elif self.broj == 1:
+        elif self.remaining == 1:
             self.item.setPixmap(QPixmap(IMAGES_DIR + "lives/1zivot.png"))
-        elif self.broj == 0:
+        elif self.remaining == 0:
             self.item.setPixmap(QPixmap(IMAGES_DIR + "lives/0zivota.png"))
-        else:
-            self.item.setPixmap(QPixmap(IMAGES_DIR + "lives/3zivota.png"))

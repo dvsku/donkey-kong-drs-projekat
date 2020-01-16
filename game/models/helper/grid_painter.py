@@ -30,10 +30,14 @@ class GridPainter:
             self.scene.help_sign = HelpSign(x * SCENE_GRID_BLOCK_WIDTH + offset_x,
                                             y * SCENE_GRID_BLOCK_HEIGHT + offset_y)
             self.scene.addItem(self.scene.help_sign)
-        elif item == PaintObject.LIVES:
-            self.scene.lives = Lives(x * SCENE_GRID_BLOCK_WIDTH + offset_x,
+        elif item == PaintObject.LIVES_PLAYER_1:
+            self.scene.__parent__.lives[0].item.setPos(x * SCENE_GRID_BLOCK_WIDTH + offset_x,
                                      y * SCENE_GRID_BLOCK_HEIGHT + offset_y)
-            self.scene.addItem(self.scene.lives.item)
+            self.scene.addItem(self.scene.__parent__.lives[0].item)
+        elif item == PaintObject.LIVES_PLAYER_2:
+            self.scene.__parent__.lives[1].item.setPos(x * SCENE_GRID_BLOCK_WIDTH + offset_x,
+                                                       y * SCENE_GRID_BLOCK_HEIGHT + offset_y)
+            self.scene.addItem(self.scene.__parent__.lives[1].item)
         elif item == PaintObject.GORILLA:
             self.scene.gorilla.item.setPos(x * SCENE_GRID_BLOCK_WIDTH + offset_x,
                                            y * SCENE_GRID_BLOCK_HEIGHT + offset_y)
