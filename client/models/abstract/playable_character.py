@@ -6,6 +6,7 @@ from common.enums.direction import Direction
 
 
 class PlayableCharacter(QObject):
+    lose_life_signal = pyqtSignal()
     move_signal = pyqtSignal(Direction)
     animation_reset_signal = pyqtSignal(Direction)
     fall_signal = pyqtSignal()
@@ -18,6 +19,7 @@ class PlayableCharacter(QObject):
         self.item = QGraphicsPixmapItem()
         self.falling = False
         self.climbing = False
+        self.alive = True
 
         self.action_keys = []
         self.keys_pressed = set()
@@ -37,6 +39,7 @@ class PlayableCharacter(QObject):
         self.fall_signal.connect(self.fall)
         self.climb_up_signal[ClimbState].connect(self.climb_up)
         self.climb_down_signal[ClimbState].connect(self.climb_down)
+        self.lose_life_signal.connect(self.lose_life)
 
     def animate(self, direction: Direction, state=False):
         count = -1
@@ -121,3 +124,6 @@ class PlayableCharacter(QObject):
 
     def fall(self):
         self.item.moveBy(0, 5)
+
+    def lose_life(self):
+        pass

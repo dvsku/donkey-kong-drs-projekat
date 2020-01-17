@@ -33,3 +33,11 @@ class SecondPlayer(PlayableCharacter):
         self.default_frame_up = QPixmap(IMAGES_DIR + "second_player/climb/climb_finish_3.png")
         self.item.setPixmap(self.default_frame_left)
         self.item.setZValue(3)
+
+    def lose_life(self):
+        self.__parent__.player_lose_life(1)
+        if self.alive:
+            self.item.setPos(self.__parent__.player_2_position[0] * SCENE_GRID_BLOCK_WIDTH,
+                             self.__parent__.player_2_position[1] * SCENE_GRID_BLOCK_HEIGHT + 5)
+        else:
+            self.__parent__.removeItem(self.item)
