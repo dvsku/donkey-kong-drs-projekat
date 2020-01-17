@@ -1,16 +1,21 @@
-import os
-import sys
 import atexit
 import json
+import os
+import sys
 from json import JSONDecodeError
-from client.globals import Direction
+
+from common.enums.client_message import ClientMessage
+from common.enums.direction import Direction
+from common.enums.layout import Layouts
+from common.enums.player import Player
+from common.enums.scene import Scene
+from common.enums.server_message import ServerMessage
 
 sys.path += [os.path.abspath('..')]
 from server.models.match import Match
 from server.models.networking.client import Client
 from server.models.networking.server_socket import ServerSocket
-from common.enums import ClientMessage, ServerMessage, Scene, MessageFormat, Player, Layouts
-from server.collision_control import CollisionControl
+from server.models.collision.collision_control import CollisionControl
 import multiprocessing as mp
 
 
@@ -45,8 +50,8 @@ class Server:
         if message['command'] == ClientMessage.CONNECTION_ESTABLISHED.value:
             client = Client(self, socket=socket)
             self.clients.append(client)
-            msg = MessageFormat.ONLY_COMMAND.value.format(ServerMessage.CONNECTION_ACK.value)
-            client.send(msg)
+            message = json.dumps({"command": ServerMessage.CONNECTION_ACK.value})
+            client.send(message)
 
     """ Used to process client requests and send responses """
 
@@ -66,7 +71,7 @@ class Server:
 
         # player has moved
         elif message['command'] == ClientMessage.MOVE.value:
-            self.process_move_request(client, message['x'], message['y'], Direction(message['direction']))
+            self.process_move_request(client, Direction(message['direction']))
 
         # player has stopped moving
         elif message['command'] == ClientMessage.STOP.value:
@@ -85,28 +90,19 @@ class Server:
             match = Match(self)
             match.add_player(client)
             self.matches.append(match)
-            msg = MessageFormat.COMMAND_SCENE.value.format(
-                ServerMessage.LOAD_SCENE.value,
-                Scene.WAITING_FOR_PLAYERS.value,
-                Player.PLAYER_1.value
-            )
-            match.send_to_all(msg)
+            message = json.dumps({"command": ServerMessage.LOAD_SCENE.value,
+                                  "scene": Scene.WAITING_FOR_PLAYERS.value, "player": Player.PLAYER_1.value})
+            match.send_to_all(message)
         # add the player to the match and notify both players to start the game on the first level
         else:
             match.add_player(client)
             match.set_level_layout(Layouts.FirstLevel)
-            msg = MessageFormat.COMMAND_SCENE.value.format(
-                ServerMessage.LOAD_SCENE.value,
-                Scene.FIRST_LEVEL.value,
-                Player.PLAYER_1.value
-            )
-            match.players[0].send(msg)
-            msg = MessageFormat.COMMAND_SCENE.value.format(
-                ServerMessage.LOAD_SCENE.value,
-                Scene.FIRST_LEVEL.value,
-                Player.PLAYER_2.value
-            )
-            match.players[1].send(msg)
+            message = json.dumps({"command": ServerMessage.LOAD_SCENE.value,
+                                  "scene": Scene.FIRST_LEVEL.value, "player": Player.PLAYER_1.value})
+            match.players[0].send(message)
+            message = json.dumps({"command": ServerMessage.LOAD_SCENE.value,
+                                  "scene": Scene.FIRST_LEVEL.value, "player": Player.PLAYER_2.value})
+            match.players[1].send(message)
             match.start_threads()
 
     def process_close_request(self, client):
@@ -116,17 +112,17 @@ class Server:
         client.socket.close()
         self.remove_client(client)
 
-    def process_move_request(self, client, x, y, direction):
+    def process_move_request(self, client, direction):
         # get players' match and notify both players to move the requesting players' avatar
         if not client.falling:
             match = self.get_client_match(client)
-            match.move(client, x, y, direction)
+            match.move(client, direction)
 
     def process_stop_request(self, client):
         # get players' match and notify both players to reset the requesting players' avatar to default sprite
         match = self.get_client_match(client)
-        msg = MessageFormat.ONLY_COMMAND.value.format(ServerMessage.STOP_OPPONENT.value)
-        match.send_to_opponent(msg, client)
+        message = json.dumps({"command": ServerMessage.STOP_OPPONENT.value})
+        match.send_to_opponent(message, client)
 
     # endregion
 

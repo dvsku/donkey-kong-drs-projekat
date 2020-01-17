@@ -1,7 +1,7 @@
 import numpy as np
 
-from client.globals import SCENE_WIDTH, SCENE_GRID_BLOCK_WIDTH, SCENE_HEIGHT, SCENE_GRID_BLOCK_HEIGHT
-from common.enums import LayoutBlock
+from common.constants import SCENE_HEIGHT, SCENE_GRID_BLOCK_HEIGHT, SCENE_WIDTH, SCENE_GRID_BLOCK_WIDTH
+from common.enums.layout_block import LayoutBlock
 
 
 def get_level_layout(level: str):

@@ -1,12 +1,12 @@
-from client.globals import *
+from client.models.abstract.game_scene import GameScene
+from client.models.enums.paint_object import PaintObject
 from client.models.game_objects.first_player import FirstPlayer
-from client.models.game_objects.help_sign import HelpSign
+from client.models.game_objects.ladder import Ladder
 from client.models.game_objects.platform import Platform
 from client.models.game_objects.princess import Princess
-from client.models.game_objects.ladder import Ladder
-from client.models.abstract.game_scene import GameScene
 from client.models.game_objects.second_player import SecondPlayer
-from common.enums import LayoutBlock
+from common.constants import SCENE_HEIGHT, SCENE_GRID_BLOCK_HEIGHT, SCENE_WIDTH, SCENE_GRID_BLOCK_WIDTH
+from common.enums.layout_block import LayoutBlock
 
 
 class GridPainter:
@@ -30,7 +30,7 @@ class GridPainter:
 
     def paint_one(self, x: int, y: int, offset_x: int, offset_y: int, item: PaintObject):
         if item == PaintObject.PRINCESS:
-            self.scene.princess = Princess(x * SCENE_GRID_BLOCK_WIDTH + offset_x,
+            self.scene.princess = Princess(self.scene, x * SCENE_GRID_BLOCK_WIDTH + offset_x,
                                            y * SCENE_GRID_BLOCK_HEIGHT + offset_y)
             self.scene.addItem(self.scene.princess)
         elif item == PaintObject.PLAYER_1:
@@ -51,7 +51,3 @@ class GridPainter:
                 self.scene.opponent.item.setPos(x * SCENE_GRID_BLOCK_WIDTH + offset_x,
                                                 y * SCENE_GRID_BLOCK_HEIGHT + offset_y)
                 self.scene.addItem(self.scene.opponent.item)
-        elif item == PaintObject.HELP_SIGN:
-            self.scene.help_sign = HelpSign(x * SCENE_GRID_BLOCK_WIDTH + offset_x,
-                                            y * SCENE_GRID_BLOCK_HEIGHT + offset_y)
-            self.scene.addItem(self.scene.help_sign)

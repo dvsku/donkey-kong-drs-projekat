@@ -1,8 +1,9 @@
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QGraphicsPixmapItem
 
-from client.globals import IMAGES_DIR, SCENE_WIDTH
+from client.constants import IMAGES_DIR
 from client.models.abstract.info_scene import InfoScene
+from common.constants import SCENE_WIDTH
 
 
 class WaitingForPlayers(InfoScene):

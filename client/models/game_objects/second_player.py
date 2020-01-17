@@ -1,11 +1,12 @@
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap
-from client.globals import IMAGES_DIR
+
+from client.constants import IMAGES_DIR
 from client.models.abstract.playable_character import PlayableCharacter
 
 
 class SecondPlayer(PlayableCharacter):
-    def __init__(self, parent, x, y):
+    def __init__(self, parent):
         super().__init__(parent)
 
         self.action_keys = [Qt.Key_Up, Qt.Key_Down, Qt.Key_Left, Qt.Key_Right]
@@ -32,4 +33,3 @@ class SecondPlayer(PlayableCharacter):
         self.default_frame_up = QPixmap(IMAGES_DIR + "second_player/climb/climb_finish_3.png")
         self.item.setPixmap(self.default_frame_left)
         self.item.setZValue(3)
-        self.item.setPos(x, y)

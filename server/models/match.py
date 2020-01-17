@@ -1,17 +1,22 @@
 # region Imports
+import json
 import multiprocessing as mp
 import random
 import time
+from threading import Thread
 
 import numpy as np
 
-from client.globals import CCMethods, Direction, BARREL_POOL_SIZE, SCENE_WIDTH
-from client.models.helper.pipe_message import Message
+from common.constants import BARREL_POOL_SIZE, SCENE_WIDTH
+from common.enums.climb_state import ClimbState
+from common.enums.collision_control_methods import CCMethods
+from common.enums.direction import Direction
+from common.enums.layout import Layouts
+from common.enums.server_message import ServerMessage
 from common.layout_builder import get_level_layout
+from server.models.collision.pipe_message import Message
 from server.models.game_objects.barrel import Barrel
 from server.models.networking.client import Client
-from common.enums import ServerMessage, MessageFormat, Layouts
-from threading import Thread
 
 
 # endregion
@@ -42,16 +47,18 @@ class Match:
         thread_endpoint = self.add_cc_endpoint()
         while not self.kill_thread:
             for player in self.players:
-                if player.x is not None and player.y is not None and player.latest_direction is not None:
+                if player.x is not None and player.y is not None and (player.latest_direction == Direction.LEFT or
+                                                                      player.latest_direction == Direction.RIGHT):
                     thread_endpoint.send(Message(CCMethods.FALLING, player.x, player.y,
                                                  player.latest_direction, self.level_layout))
                     msg = thread_endpoint.recv()
                     if msg.args[0]:
                         player.falling = True
-                        message = MessageFormat.ONLY_COMMAND.value.format(ServerMessage.FALL.value)
+                        message = json.dumps({"command": ServerMessage.FALL.value})
                         player.send(message)
-                        message = MessageFormat.ONLY_COMMAND.value.format(ServerMessage.FALL_OPPONENT.value)
+                        message = json.dumps({"command": ServerMessage.FALL_OPPONENT.value})
                         self.send_to_opponent(message, player)
+                        player.y += 5
                     else:
                         player.falling = False
 
@@ -68,9 +75,9 @@ class Match:
                     barrel.drawn = True
                     barrel.y = self.barrel_draw_y
                     barrel.x = random.randrange(0, SCENE_WIDTH - 40)
-                    msg = MessageFormat.COMMAND_DRAW_BARREL.value.format(ServerMessage.DRAW_BARREL.value,
-                                                                         barrel.x, barrel.y, barrel.index)
-                    self.send_to_all(msg)
+                    message = json.dumps({"command": ServerMessage.DRAW_BARREL.value,
+                                          "x": barrel.x, "y": barrel.y, "index": barrel.index})
+                    self.send_to_all(message)
                     break
 
     def barrels_fall_thread_do_work(self):
@@ -82,8 +89,7 @@ class Match:
                     msg = thread_endpoint.recv()
                     # barrel reached end of screen, remove it
                     if msg.args[0]:
-                        message = MessageFormat.COMMAND_REMOVE_BARREL.value.format(ServerMessage.REMOVE_BARREL.value,
-                                                                                   index)
+                        message = json.dumps({"command": ServerMessage.REMOVE_BARREL.value, "index": index})
                         self.send_to_all(message)
                         barrel.drawn = False
                     # barrel has not reached end of screen, fall
@@ -96,22 +102,15 @@ class Match:
                                                              player.x, player.y))
                                 msg = thread_endpoint.recv()
                                 if msg.args[0]:
-                                    message = MessageFormat.COMMAND_REMOVE_BARREL.value.format(
-                                        ServerMessage.HIT.value, index
-                                    )
+                                    message = json.dumps({"command": ServerMessage.HIT.value, "index": index})
                                     player.send(message)
-                                    message = MessageFormat.COMMAND_REMOVE_BARREL.value.format(
-                                        ServerMessage.OPPONENT_HIT.value, index
-                                    )
+                                    message = json.dumps({"command": ServerMessage.OPPONENT_HIT.value, "index": index})
                                     self.send_to_opponent(message, player)
                                     barrel.drawn = False
                                     move_barrel = False
 
                                 if move_barrel:
-                                    message = MessageFormat.COMMAND_MOVE_BARREL.value.format(
-                                        ServerMessage.MOVE_BARREL.value,
-                                        index
-                                    )
+                                    message = json.dumps({"command": ServerMessage.MOVE_BARREL.value, "index": index})
                                     self.send_to_all(message)
                                     barrel.y += 5
             time.sleep(0.03)
@@ -128,32 +127,72 @@ class Match:
     the avatar of the player that sent the request, else notify both players to reset the avatar to default sprite.    
     """
 
-    def move(self, player, x, y, direction):
-        msg = None
-        if direction == Direction.LEFT:
-            self.cc_endpoint.send(Message(CCMethods.END_OF_SCREEN_L, x))
-            msg = self.cc_endpoint.recv()
-        elif direction == Direction.RIGHT:
-            self.cc_endpoint.send(Message(CCMethods.END_OF_SCREEN_R, x))
-            msg = self.cc_endpoint.recv()
-
+    def move(self, player, direction):
         player.latest_direction = direction
+        if direction == Direction.LEFT:
+            self.cc_endpoint.send(Message(CCMethods.END_OF_SCREEN_L, player.x))
+            msg = self.cc_endpoint.recv()
+            self.move_left(player, msg)
+        elif direction == Direction.RIGHT:
+            self.cc_endpoint.send(Message(CCMethods.END_OF_SCREEN_R, player.x))
+            msg = self.cc_endpoint.recv()
+            self.move_right(player, msg)
+        elif direction == Direction.UP:
+            self.cc_endpoint.send(Message(CCMethods.CLIMB_UP, player.x, player.y, self.level_layout))
+            msg = self.cc_endpoint.recv()
+            self.move_up(player, msg)
+        elif direction == Direction.DOWN:
+            self.cc_endpoint.send(Message(CCMethods.CLIMB_DOWN, player.x, player.y, self.level_layout))
+            msg = self.cc_endpoint.recv()
+            self.move_down(player, msg)
 
-        if msg is not None:
-            if not msg.args[0]:
-                message = MessageFormat.COMMAND_MOVE.value.format(ServerMessage.MOVE.value,
-                                                                  direction.value,
-                                                                  0, 0)
-                player.send(message)
-                message = MessageFormat.COMMAND_MOVE.value.format(ServerMessage.MOVE_OPPONENT.value,
-                                                                  direction.value,
-                                                                  0, 0)
-                self.send_to_opponent(message, player)
-            else:
-                message = MessageFormat.ONLY_COMMAND.value.format(ServerMessage.STOP.value)
-                player.send(message)
-                message = MessageFormat.ONLY_COMMAND.value.format(ServerMessage.STOP_OPPONENT.value)
-                self.send_to_opponent(message, player)
+    def move_left(self, player, msg: Message):
+        # player is not at the edge of the screen
+        if not msg.args[0]:
+            player.x -= 5
+            message = json.dumps({"command": ServerMessage.MOVE.value, "direction": Direction.LEFT.value})
+            player.send(message)
+            message = json.dumps({"command": ServerMessage.MOVE_OPPONENT.value, "direction": Direction.LEFT.value})
+            self.send_to_opponent(message, player)
+        # player is at the edge of the screen
+        else:
+            message = json.dumps({"command": ServerMessage.STOP.value})
+            player.send(message)
+            message = json.dumps({"command": ServerMessage.STOP_OPPONENT.value})
+            self.send_to_opponent(message, player)
+
+    def move_right(self, player, msg: Message):
+        # player is not at the edge of the screen
+        if not msg.args[0]:
+            player.x += 5
+            message = json.dumps({"command": ServerMessage.MOVE.value, "direction": Direction.RIGHT.value})
+            player.send(message)
+            message = json.dumps({"command": ServerMessage.MOVE_OPPONENT.value, "direction": Direction.RIGHT.value})
+            self.send_to_opponent(message, player)
+        # player is at the edge of the screen
+        else:
+            message = json.dumps({"command": ServerMessage.STOP.value})
+            player.send(message)
+            message = json.dumps({"command": ServerMessage.STOP_OPPONENT.value})
+            self.send_to_opponent(message, player)
+
+    def move_up(self, player, msg: Message):
+        if msg.args[0] == ClimbState.CLIMB or msg.args[0] == ClimbState.FINISH:
+            player.y -= 5
+
+        message = json.dumps({"command": ServerMessage.CLIMB_UP.value, "climb_state": msg.args[0].value})
+        player.send(message)
+        message = json.dumps({"command": ServerMessage.CLIMB_UP_OPPONENT.value, "climb_state": msg.args[0].value})
+        self.send_to_opponent(message, player)
+
+    def move_down(self, player, msg: Message):
+        if msg.args[0] == ClimbState.CLIMB or msg.args[0] == ClimbState.FINISH:
+            player.y += 5
+
+        message = json.dumps({"command": ServerMessage.CLIMB_DOWN.value, "climb_state": msg.args[0].value})
+        player.send(message)
+        message = json.dumps({"command": ServerMessage.CLIMB_DOWN_OPPONENT.value, "climb_state": msg.args[0].value})
+        self.send_to_opponent(message, player)
 
     # endregion
 
@@ -185,9 +224,9 @@ class Match:
 
     def end(self):
         self.kill_thread = True
-        msg = MessageFormat.ONLY_COMMAND.value.format(ServerMessage.MATCH_ENDED.value)
+        message = json.dumps({"command": ServerMessage.MATCH_ENDED.value})
         self.cc_endpoint.send(Message(CCMethods.KILL_PROCESS))
-        self.send_to_all(msg)
+        self.send_to_all(message)
 
     """ Removes the player from the match and ends the match if favor of his opponent """
 

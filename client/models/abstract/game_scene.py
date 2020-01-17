@@ -1,16 +1,20 @@
-from threading import Thread
+import json
 import time
+from threading import Thread
+
 import numpy as np
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPen, QColor, QFont
 from PyQt5.QtWidgets import QGraphicsScene, QGraphicsTextItem
-from client.globals import *
-from client.models.abstract.playable_character import PlayableCharacter
+
 from client.models.game_objects.barrel import Barrel
 from client.models.game_objects.first_player import FirstPlayer
-from client.models.game_objects.ladder import Ladder
 from client.models.game_objects.second_player import SecondPlayer
-from common.enums import Player, MessageFormat, ClientMessage
+from common.constants import BARREL_POOL_SIZE, SCENE_GRID_BLOCK_WIDTH, SCENE_GRID_BLOCK_HEIGHT, SCENE_WIDTH, \
+    SCENE_HEIGHT
+from common.enums.client_message import ClientMessage
+from common.enums.direction import Direction
+from common.enums.player import Player
 
 
 class GameScene(QGraphicsScene):
@@ -25,11 +29,11 @@ class GameScene(QGraphicsScene):
         self.opponent = None
 
         if player == Player.PLAYER_1:
-            self.me = FirstPlayer(self, 0, 0)
-            self.opponent = SecondPlayer(self, 0, 0)
+            self.me = FirstPlayer(self)
+            self.opponent = SecondPlayer(self)
         else:
-            self.me = SecondPlayer(self, 0, 0)
-            self.opponent = FirstPlayer(self, 0, 0)
+            self.me = SecondPlayer(self)
+            self.opponent = FirstPlayer(self)
 
         self.move_thread = Thread(target=self.move_thread_do_work)
         self.pos_update_thread = Thread(target=self.pos_update_do_work)
@@ -43,6 +47,7 @@ class GameScene(QGraphicsScene):
 
     def remove_barrel(self, index):
         self.removeItem(self.barrel_pool[index].item)
+
     # endregion
 
     # region Grid
@@ -77,65 +82,11 @@ class GameScene(QGraphicsScene):
         self.grid_visible = not self.grid_visible
         for line in self.grid:
             line.setVisible(self.grid_visible)
-    # endregion
-
-    # region Collision
-
-    def check_climbing(self, player_x, player_y, direction: Direction):
-        # default return value, if it's NONE, don't climb
-        ret_value = ClimbState.NONE
-
-        # get x center point
-        player_x_center = player_x + 13
-
-        if direction == Direction.UP:
-            # get x  of the block the player is in
-            x = int(player_x / SCENE_GRID_BLOCK_WIDTH)
-            # get y of the block the player is in (feet level)
-            y = int((player_y + 34) / SCENE_GRID_BLOCK_HEIGHT)
-
-            if isinstance(self.game_objects[x][y], Ladder):
-                # get climbable ladder x coordinates (the whole ladder is not climbable)
-                ladder_x_from = self.game_objects[x][y].pos().x() + 5
-                ladder_x_to = self.game_objects[x][y].pos().x() + 30
-
-                # check if the player is between climbable x coordinates
-                if (ladder_x_from < player_x_center) and (ladder_x_to > player_x_center):
-                    # get y of the block at player head level
-                    y = int((player_y + 3) / SCENE_GRID_BLOCK_HEIGHT)
-
-                    # check if block above the player's head is empty
-                    if self.game_objects[x][y] is None:
-                        ret_value = ClimbState.FINISH
-                    else:
-                        ret_value = ClimbState.CLIMB
-        elif direction == Direction.DOWN:
-            # get x  of the block the player is in
-            x = int(player_x / SCENE_GRID_BLOCK_WIDTH)
-            # get y of the block the player is in (feet level)
-            y = int((player_y + 35) / SCENE_GRID_BLOCK_HEIGHT)
-
-            if isinstance(self.game_objects[x][y], Ladder):
-                # get climbable ladder x coordinates (the whole ladder is not climbable)
-                ladder_x_from = self.game_objects[x][y].pos().x() + 5
-                ladder_x_to = self.game_objects[x][y].pos().x() + 30
-
-                # check if the player is between climbable x coordinates
-                if (ladder_x_from < player_x_center) and (ladder_x_to > player_x_center):
-                    # get y of the block at player head level
-                    y = int((player_y + 3) / SCENE_GRID_BLOCK_HEIGHT)
-
-                    # check if block above the player's head is empty
-                    if self.game_objects[x][y] is None:
-                        ret_value = ClimbState.START
-                    else:
-                        ret_value = ClimbState.CLIMB
-
-        return ret_value
 
     # endregion
 
     # region Player Thread
+
     def move_self(self):
         direction = None
         if Qt.Key_W in self.me.keys_pressed:
@@ -147,12 +98,12 @@ class GameScene(QGraphicsScene):
         elif Qt.Key_D in self.me.keys_pressed:
             direction = Direction.RIGHT
 
-        # self.me.move_signal.emit(direction)
+        if (direction == Direction.LEFT or direction == Direction.RIGHT) and self.me.climbing:
+            return
+
         self.me.latest_direction = direction
-        msg = MessageFormat.COMMAND_MOVE.value.format(ClientMessage.MOVE.value, direction.value,
-                                                      self.me.item.pos().x(),
-                                                      self.me.item.pos().y())
-        self.__parent__.socket.send_to_server(msg)
+        message = json.dumps({"command": ClientMessage.MOVE.value, "direction": direction.value})
+        self.__parent__.socket.send_to_server(message)
 
     def move_thread_do_work(self):
         while not self.kill_thread:
@@ -161,51 +112,21 @@ class GameScene(QGraphicsScene):
             else:
                 if self.me.latest_direction is not None:
                     self.me.animation_reset_signal.emit(self.me.latest_direction)
-                    msg = MessageFormat.ONLY_COMMAND.value.format(ClientMessage.STOP.value)
-                    self.__parent__.socket.send_to_server(msg)
+                    message = json.dumps({"command": ClientMessage.STOP.value})
+                    self.__parent__.socket.send_to_server(message)
                     self.me.latest_direction = None
 
             time.sleep(0.02)
 
     def pos_update_do_work(self):
         while not self.kill_thread:
-            msg = MessageFormat.COMMAND_POS.value.format(ClientMessage.POS.value, self.me.item.pos().x(),
-                                                         self.me.item.pos().y())
-            self.__parent__.socket.send_to_server(msg)
-            time.sleep(0.01)
+            message = json.dumps({"command": ClientMessage.POS.value, "x": self.me.item.x(), "y": self.me.item.y()})
+            self.__parent__.socket.send_to_server(message)
+            time.sleep(0.1)
 
-    def player_thread_move_player(self, player: PlayableCharacter):
-        x = player.item.pos().x()
-        y = player.item.pos().y()
-
-        # up key
-        if player.action_keys[0] in player.keys_pressed:
-            player.latest_key = player.action_keys[0]
-            result = self.check_climbing(x, y, Direction.UP)
-
-            if result == ClimbState.CLIMB:
-                player.climbing = True
-                player.move_signal.emit(Direction.UP)
-            elif result == ClimbState.FINISH:
-                player.climbing = True
-                player.climb_finish_signal.emit()
-            elif result == ClimbState.NONE:
-                player.climbing = False
-                player.animation_reset_signal.emit(Direction.UP)
-        # down key
-        elif player.action_keys[1] in player.keys_pressed:
-            player.latest_key = player.action_keys[1]
-            result = self.check_climbing(x, y, Direction.DOWN)
-
-            if result == ClimbState.CLIMB:
-                player.climbing = True
-                player.move_signal.emit(Direction.DOWN)
-            elif result == ClimbState.START:
-                player.climbing = True
-                player.climb_start_signal.emit()
-            elif result == ClimbState.NONE:
-                player.climbing = False
-                player.animation_reset_signal.emit(Direction.DOWN)
+    def send_pos_update(self):
+        message = json.dumps({"command": ClientMessage.POS.value, "x": self.me.item.x(), "y": self.me.item.y()})
+        self.__parent__.socket.send_to_server(message)
 
     # endregion
 

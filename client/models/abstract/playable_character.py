@@ -1,14 +1,16 @@
 from PyQt5.QtCore import QObject, pyqtSignal
 from PyQt5.QtWidgets import QGraphicsPixmapItem
-from client.globals import *
+
+from common.enums.climb_state import ClimbState
+from common.enums.direction import Direction
 
 
 class PlayableCharacter(QObject):
     move_signal = pyqtSignal(Direction)
     animation_reset_signal = pyqtSignal(Direction)
     fall_signal = pyqtSignal()
-    climb_finish_signal = pyqtSignal()
-    climb_start_signal = pyqtSignal()
+    climb_up_signal = pyqtSignal(ClimbState)
+    climb_down_signal = pyqtSignal(ClimbState)
 
     def __init__(self, parent):
         super().__init__()
@@ -33,8 +35,8 @@ class PlayableCharacter(QObject):
         self.move_signal[Direction].connect(self.move)
         self.animation_reset_signal[Direction].connect(self.reset_animation)
         self.fall_signal.connect(self.fall)
-        self.climb_finish_signal.connect(self.finish_climbing)
-        self.climb_start_signal.connect(self.start_climbing)
+        self.climb_up_signal[ClimbState].connect(self.climb_up)
+        self.climb_down_signal[ClimbState].connect(self.climb_down)
 
     def animate(self, direction: Direction, state=False):
         count = -1
@@ -79,37 +81,43 @@ class PlayableCharacter(QObject):
 
     def move(self, direction: Direction):
         if direction == direction.LEFT:
-            self.go_left()
+            self.animate(Direction.LEFT)
+            self.item.moveBy(-5, 0)
         elif direction == direction.RIGHT:
-            self.go_right()
-        elif direction == direction.UP:
-            self.go_up()
-        elif direction == direction.DOWN:
-            self.go_down()
+            self.animate(Direction.RIGHT)
+            self.item.moveBy(5, 0)
 
-    def go_up(self):
-        self.animate(Direction.UP)
+    def climb_up(self, climb_state: ClimbState):
+        if climb_state == ClimbState.CLIMB:
+            self.climbing = True
+            self.animate(Direction.UP)
+            self.item.moveBy(0, -5)
+        elif climb_state == ClimbState.FINISH:
+            self.climbing = True
+            self.finish_climbing_up()
+        elif climb_state == ClimbState.NONE:
+            self.climbing = False
+            self.reset_animation(Direction.UP)
+
+    def finish_climbing_up(self):
+        self.animate(Direction.UP, state=True)
         self.item.moveBy(0, -5)
 
-    def go_down(self):
-        self.animate(Direction.DOWN)
-        self.item.moveBy(0, 5)
+    def climb_down(self, climb_state: ClimbState):
+        if climb_state == ClimbState.CLIMB:
+            self.climbing = True
+            self.animate(Direction.DOWN)
+            self.item.moveBy(0, 5)
+        elif climb_state == ClimbState.FINISH:
+            self.climbing = True
+            self.finish_climbing_down()
+        elif climb_state == ClimbState.NONE:
+            self.climbing = False
+            self.reset_animation(Direction.DOWN)
 
-    def go_left(self):
-        self.animate(Direction.LEFT)
-        self.item.moveBy(-5, 0)
-
-    def go_right(self):
-        self.animate(Direction.RIGHT)
-        self.item.moveBy(5, 0)
-
-    def fall(self):
-        self.item.moveBy(0, 5)
-
-    def start_climbing(self):
+    def finish_climbing_down(self):
         self.animate(Direction.DOWN, state=True)
         self.item.moveBy(0, 5)
 
-    def finish_climbing(self):
-        self.animate(Direction.UP, state=True)
-        self.item.moveBy(0, -5)
+    def fall(self):
+        self.item.moveBy(0, 5)

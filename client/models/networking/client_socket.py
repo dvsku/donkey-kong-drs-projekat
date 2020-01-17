@@ -1,6 +1,8 @@
+import json
 import socket
-from common.enums import ClientMessage, MessageFormat
 from threading import Thread
+
+from common.enums.client_message import ClientMessage
 
 
 class ClientSocket:
@@ -16,8 +18,8 @@ class ClientSocket:
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.connect((socket.gethostname(), 1234))
         self.socket.settimeout(2)
-        msg = MessageFormat.ONLY_COMMAND.value.format(ClientMessage.CONNECTION_ESTABLISHED.value)
-        self.send_to_server(msg)
+        message = json.dumps({"command": ClientMessage.CONNECTION_ESTABLISHED.value})
+        self.send_to_server(message)
 
     def send_to_server(self, msg):
         try:

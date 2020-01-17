@@ -1,6 +1,7 @@
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QGraphicsPixmapItem
-from client.globals import IMAGES_DIR
+
+from client.constants import IMAGES_DIR
 
 
 class Platform(QGraphicsPixmapItem):

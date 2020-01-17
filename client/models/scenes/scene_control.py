@@ -1,16 +1,23 @@
+import json
 from json import JSONDecodeError
+
 from PyQt5.QtCore import Qt, QObject, pyqtSignal
 from PyQt5.QtGui import QBrush
 from PyQt5.QtWidgets import QGraphicsView
-from client.globals import WINDOW_WIDTH, WINDOW_HEIGHT, Direction
+
 from client.models.abstract.game_scene import GameScene
 from client.models.networking.client_socket import ClientSocket
 from client.models.scenes.first_level import FirstLevel
 from client.models.scenes.main_menu import MainMenu
 from client.models.scenes.match_end import MatchEnd
 from client.models.scenes.waiting_for_players import WaitingForPlayers
-from common.enums import ServerMessage, ClientMessage, Scene, MessageFormat, Player
-import json
+from common.constants import SCENE_WIDTH, SCENE_HEIGHT
+from common.enums.client_message import ClientMessage
+from common.enums.climb_state import ClimbState
+from common.enums.direction import Direction
+from common.enums.player import Player
+from common.enums.scene import Scene
+from common.enums.server_message import ServerMessage
 
 
 class SceneControl(QObject):
@@ -26,7 +33,7 @@ class SceneControl(QObject):
         self.view = QGraphicsView()
         self.view.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.view.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        self.view.setFixedSize(WINDOW_WIDTH + 3, WINDOW_HEIGHT + 3)
+        self.view.setFixedSize(SCENE_WIDTH + 3, SCENE_HEIGHT + 3)
         self.view.show()
 
         self.view.setBackgroundBrush(QBrush(Qt.black))
@@ -46,8 +53,8 @@ class SceneControl(QObject):
             return
 
         if message['command'] == ServerMessage.CONNECTION_ACK.value:
-            msg = MessageFormat.ONLY_COMMAND.value.format(ClientMessage.REQUEST_GAME.value)
-            self.socket.send_to_server(msg)
+            message = json.dumps({"command": ClientMessage.REQUEST_GAME.value})
+            self.socket.send_to_server(message)
 
         elif message['command'] == ServerMessage.LOAD_SCENE.value:
             self.player = Player(message['player'])
@@ -94,6 +101,18 @@ class SceneControl(QObject):
         elif message['command'] == ServerMessage.MATCH_ENDED.value:
             self.load_scene_signal.emit(Scene.MATCH_END.value)
 
+        elif message['command'] == ServerMessage.CLIMB_UP.value:
+            self.current_scene.me.climb_up_signal.emit(ClimbState(message['climb_state']))
+
+        elif message['command'] == ServerMessage.CLIMB_UP_OPPONENT.value:
+            self.current_scene.opponent.climb_up_signal.emit(ClimbState(message['climb_state']))
+
+        elif message['command'] == ServerMessage.CLIMB_DOWN.value:
+            self.current_scene.me.climb_down_signal.emit(ClimbState(message['climb_state']))
+
+        elif message['command'] == ServerMessage.CLIMB_DOWN_OPPONENT.value:
+            self.current_scene.opponent.climb_down_signal.emit(ClimbState(message['climb_state']))
+
     def load_scene(self, index):
         self.cleanup_scene()
         if index == Scene.MAIN_MENU.value:
@@ -115,8 +134,8 @@ class SceneControl(QObject):
         self.cleanup_scene()
 
         if self.socket is not None:
-            msg = MessageFormat.ONLY_COMMAND.value.format(ClientMessage.CLOSE.value)
-            self.socket.send_to_server(msg)
+            message = json.dumps({"command": ClientMessage.CLOSE.value})
+            self.socket.send_to_server(message)
             self.socket.close()
 
     def close_game(self):

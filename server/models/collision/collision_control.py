@@ -1,8 +1,12 @@
 import multiprocessing as mp
 from threading import Thread
-from client.globals import *
-from client.models.helper.pipe_message import Message
-from common.enums import LayoutBlock
+
+from common.constants import SCENE_GRID_BLOCK_WIDTH, SCENE_GRID_BLOCK_HEIGHT, SCENE_WIDTH, SCENE_HEIGHT
+from common.enums.climb_state import ClimbState
+from common.enums.collision_control_methods import CCMethods
+from common.enums.direction import Direction
+from common.enums.layout_block import LayoutBlock
+from server.models.collision.pipe_message import Message
 
 
 class CollisionControl(mp.Process):
@@ -71,6 +75,66 @@ class CollisionControl(mp.Process):
         elif layout[y][x] == LayoutBlock.Platform or layout[y][x] == LayoutBlock.Ladder:
             if (y * SCENE_GRID_BLOCK_HEIGHT) > player_y + 35:
                 ret_value = True
+
+        self.endpoints[index].send(Message(CCMethods.EMPTY, ret_value))
+
+    def check_climbing_up(self, index, player_x, player_y, layout):
+        # default return value, if it's NONE, don't climb
+        ret_value = ClimbState.NONE
+
+        # get x center point
+        player_x_center = player_x + 13
+
+        # get x  of the block the player is in
+        x = int(player_x / SCENE_GRID_BLOCK_WIDTH)
+        # get y of the block the player is in (feet level)
+        y = int((player_y + 34) / SCENE_GRID_BLOCK_HEIGHT)
+
+        if layout[y][x] == LayoutBlock.Ladder:
+            # get climbable ladder x coordinates (the whole ladder is not climbable)
+            ladder_x_from = x * SCENE_GRID_BLOCK_WIDTH + 5
+            ladder_x_to = x * SCENE_GRID_BLOCK_WIDTH + 30
+
+            # check if the player is between climbable x coordinates
+            if (ladder_x_from < player_x_center) and (ladder_x_to > player_x_center):
+                # get y of the block at player head level
+                y = int((player_y + 3) / SCENE_GRID_BLOCK_HEIGHT)
+
+                # check if block above the player's head is empty
+                if layout[y][x] is None:
+                    ret_value = ClimbState.FINISH
+                else:
+                    ret_value = ClimbState.CLIMB
+
+        self.endpoints[index].send(Message(CCMethods.EMPTY, ret_value))
+
+    def check_climbing_down(self, index, player_x, player_y, layout):
+        # default return value, if it's NONE, don't climb
+        ret_value = ClimbState.NONE
+
+        # get x center point
+        player_x_center = player_x + 13
+
+        # get x  of the block the player is in
+        x = int(player_x / SCENE_GRID_BLOCK_WIDTH)
+        # get y of the block the player is in (feet level)
+        y = int((player_y + 35) / SCENE_GRID_BLOCK_HEIGHT)
+
+        if layout[y][x] == LayoutBlock.Ladder:
+            # get climbable ladder x coordinates (the whole ladder is not climbable)
+            ladder_x_from = x * SCENE_GRID_BLOCK_WIDTH + 5
+            ladder_x_to = x * SCENE_GRID_BLOCK_WIDTH + 30
+
+            # check if the player is between climbable x coordinates
+            if (ladder_x_from < player_x_center) and (ladder_x_to > player_x_center):
+                # get y of the block at player head level
+                y = int((player_y + 3) / SCENE_GRID_BLOCK_HEIGHT)
+
+                # check if block above the player's head is empty
+                if layout[y][x] is None:
+                    ret_value = ClimbState.FINISH
+                else:
+                    ret_value = ClimbState.CLIMB
 
         self.endpoints[index].send(Message(CCMethods.EMPTY, ret_value))
 

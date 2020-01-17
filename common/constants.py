@@ -1,0 +1,9 @@
+import os
+
+COMMON_ROOT = os.path.dirname(os.path.abspath(__file__))
+
+SCENE_WIDTH = 800
+SCENE_HEIGHT = 600
+SCENE_GRID_BLOCK_WIDTH = 40
+SCENE_GRID_BLOCK_HEIGHT = 40
+BARREL_POOL_SIZE = 10

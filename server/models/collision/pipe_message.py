@@ -1,4 +1,4 @@
-from client.globals import CCMethods
+from common.enums.collision_control_methods import CCMethods
 
 
 class Message:

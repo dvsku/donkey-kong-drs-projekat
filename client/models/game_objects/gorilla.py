@@ -1,12 +1,12 @@
 from PyQt5.QtCore import QObject
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QGraphicsPixmapItem
-from client.globals import IMAGES_DIR
+
+from client.constants import IMAGES_DIR
 
 
 class Gorilla(QObject):
     def __init__(self, parent):
-
         super().__init__()
         self.__parent__ = parent
         self.item = QGraphicsPixmapItem()
