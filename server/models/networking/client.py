@@ -27,8 +27,7 @@ class Client:
         try:
             self.socket.send(bytes(msg, 'utf-8'))
         except OSError:
-            print(f"failed to send: {msg}")
-            pass
+            self.__parent__.stop_match(self)
 
     def add_point(self):
         if self.highest_y > self.y:

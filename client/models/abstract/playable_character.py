@@ -9,6 +9,7 @@ from common.enums.direction import Direction
 
 class PlayableCharacter(QObject):
     set_lives_signal = pyqtSignal(int)
+    set_coin_life_signal = pyqtSignal(int)
     move_signal = pyqtSignal(Direction)
     animation_reset_signal = pyqtSignal(Direction)
     fall_signal = pyqtSignal()
@@ -51,6 +52,7 @@ class PlayableCharacter(QObject):
         self.climb_up_signal[ClimbState].connect(self.__climb_up)
         self.climb_down_signal[ClimbState].connect(self.__climb_down)
         self.set_lives_signal[int].connect(self.set_lives)
+        self.set_coin_life_signal[int].connect(self.set_coin_life)
         self.update_points_signal[int].connect(self.__update_points)
 
     """ Changes lives image and removes self from scene on 0 lives """
@@ -69,6 +71,18 @@ class PlayableCharacter(QObject):
         if self.alive:
             self.item.setPos(self.starting_x, self.starting_y)
         else:
+            self.__parent__.removeItem(self.item)
+
+    def set_coin_life(self, lives: int):
+        self.lives_remaining = lives
+        if self.lives_remaining == 3:
+            self.lives.setPixmap(QPixmap(IMAGES_DIR + "lives/lives_3.png"))
+        elif self.lives_remaining == 2:
+            self.lives.setPixmap(QPixmap(IMAGES_DIR + "lives/lives_2.png"))
+        elif self.lives_remaining == 1:
+            self.lives.setPixmap(QPixmap(IMAGES_DIR + "lives/lives_1.png"))
+        elif self.lives_remaining == 0:
+            self.lives.setPixmap(QPixmap(IMAGES_DIR + "lives/lives_0.png"))
             self.__parent__.removeItem(self.item)
 
     """ Changes points counter in the scene """

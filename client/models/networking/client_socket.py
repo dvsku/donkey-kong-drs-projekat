@@ -2,6 +2,7 @@ import json
 from socket import *
 from threading import Thread
 from common.enums.client_message import ClientMessage
+from common.enums.info_scenes import InfoScenes
 
 
 class ClientSocket:
@@ -26,7 +27,9 @@ class ClientSocket:
         try:
             self.socket.send(bytes(msg, 'utf-8'))
         except ConnectionResetError:
-            pass
+            print("lost connection to server")
+            self.__parent__.load_info_scene_signal.emit(InfoScenes.MAIN_MENU.value)
+            self.__parent__.socket = None
 
     """ Closes the connection """
     def close(self):

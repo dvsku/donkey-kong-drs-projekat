@@ -7,6 +7,8 @@ class CCMethods(Enum):
     END_OF_SCREEN_V = "check_end_of_screen_vertical"
     BARREL_COLLISION = "check_barrel_collision"
     PRINCESS_COLLISION = "check_princess_collision"
+    COIN_COLLISION = "check_coin_collision"
+    GORILLA_COLLISION = "check_gorilla_collision"
     FALLING = "check_falling"
     CLIMB_UP = "check_climbing_up"
     CLIMB_DOWN = "check_climbing_down"

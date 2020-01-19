@@ -71,6 +71,15 @@ class Server:
         if self.clients.__contains__(client):
             self.clients.remove(client)
 
+    """ Stop client's match due to disconnect and declare his opponent the winner """
+    def stop_match(self, player: Client):
+        for match in self.matches:
+            if match.players.__contains__(player):
+                match.player_disconnected(player)
+                if self.matches.__contains__(match):
+                    self.matches.remove(match)
+                break
+
     """ Starts up collision control process and adds the main pipe to it """
     def __setup_collision_control(self):
         parent, child = mp.Pipe()
@@ -98,7 +107,7 @@ class Server:
     """ Handles requests for removing the client """
     def __process_close_request(self, client: Client):
         # stop the match, and declare his opponent the winner
-        self.__stop_match(client)
+        self.stop_match(client)
         # close the player socket and remove him from clients list
         client.socket.close()
         self.remove_client(client)
@@ -132,15 +141,6 @@ class Server:
             if match.players.__contains__(player):
                 return match
         return None
-
-    """ Stop client's match due to disconnect and declare his opponent the winner """
-    def __stop_match(self, player: Client):
-        for match in self.matches:
-            if match.players.__contains__(player):
-                match.player_disconnected(player)
-                if self.matches.__contains__(match):
-                    self.matches.remove(match)
-                break
 
     """ Stops running threads """
     def __cleanup(self):

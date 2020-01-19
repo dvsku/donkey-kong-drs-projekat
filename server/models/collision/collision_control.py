@@ -196,3 +196,47 @@ class CollisionControl(mp.Process):
             ret_val = False
 
         self.endpoints[index].send(Message(CCMethods.EMPTY, ret_val))
+
+    def check_coin_collision(self, index, c_x, c_y, p_x, p_y):
+        ret_val = True
+
+        coin_pos_y_from = c_y
+        coin_pos_y_to = c_y + 40
+        coin_pos_x_from = c_x
+        coin_pos_x_to = c_x + 40
+        player_pos_y_from = p_y
+        player_pos_y_to = p_y + 35
+        player_pos_x_from = p_x
+        player_pos_x_to = p_x + 26
+
+        if ((coin_pos_y_from < player_pos_y_from) and (coin_pos_y_to < player_pos_y_from)) or (
+                (coin_pos_y_from > player_pos_y_to) and (coin_pos_y_to > player_pos_y_to)):
+            ret_val = False
+
+        if ((coin_pos_x_from < player_pos_x_from) and (coin_pos_x_to < player_pos_x_from)) or (
+                (coin_pos_x_from > player_pos_x_to) and (coin_pos_x_to > player_pos_x_to)):
+            ret_val = False
+
+        self.endpoints[index].send(Message(CCMethods.EMPTY, ret_val))
+
+    def check_gorilla_collision(self, index, g_x, g_y, p_x, p_y):
+        ret_val = True
+
+        gorilla_y_from = g_y
+        gorilla_pos_y_to = g_y + 55
+        gorilla_pos_x_from = g_x
+        gorilla_pos_x_to = g_x + 58
+        player_pos_y_from = p_y
+        player_pos_y_to = p_y + 35
+        player_pos_x_from = p_x
+        player_pos_x_to = p_x + 26
+
+        if ((gorilla_y_from < player_pos_y_from) and (gorilla_pos_y_to < player_pos_y_from)) or (
+                (gorilla_y_from > player_pos_y_to) and (gorilla_pos_y_to > player_pos_y_to)):
+            ret_val = False
+
+        if ((gorilla_pos_x_from < player_pos_x_from) and (gorilla_pos_x_to < player_pos_x_from)) or (
+                (gorilla_pos_x_from > player_pos_x_to) and (gorilla_pos_x_to > player_pos_x_to)):
+            ret_val = False
+
+        self.endpoints[index].send(Message(CCMethods.EMPTY, ret_val))

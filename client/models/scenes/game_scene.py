@@ -5,6 +5,7 @@ import numpy as np
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QGraphicsScene
 from client.models.game_objects.barrel import Barrel
+from client.models.game_objects.coin import Coin
 from client.models.game_objects.first_player import FirstPlayer
 from client.models.game_objects.second_player import SecondPlayer
 from client.models.helper.grid_painter import GridPainter
@@ -23,6 +24,7 @@ class GameScene(QGraphicsScene):
         self.kill_thread = False
         self.princess = None
         self.gorilla = None
+        self.coin = Coin(self)
         self.barrel_pool = np.array([Barrel(self, i) for i in range(BARREL_POOL_SIZE)])
         self.me = None
         self.opponent = None

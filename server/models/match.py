@@ -1,6 +1,7 @@
 import json
 import multiprocessing as mp
 import random
+import threading
 import time
 import numpy as np
 from threading import Thread, Lock
@@ -16,6 +17,7 @@ from common.layout_builder import get_level_layout
 from server.donkey_kong_server import Server
 from server.models.collision.pipe_message import Message
 from server.models.game_objects.barrel import Barrel
+from server.models.game_objects.coin import Coin
 from server.models.game_objects.gorilla import Gorilla
 from server.models.game_objects.princess import Princess
 from server.models.networking.client import Client
@@ -28,6 +30,7 @@ class Match:
         self.princess = Princess()
         self.princess_reached = False
         self.gorilla = Gorilla()
+        self.coin = Coin()
         self.current_scene = 1
         self.kill_thread = False
         self.kill_thread_lock = Lock()
@@ -35,6 +38,7 @@ class Match:
         self.ending = False
         self.cc_endpoint = self.__add_cc_endpoint()
         self.level_layout = None
+        self.barrel_speed = 0.03
 
         self.barrel_draw_y = 80
         self.barrels = np.array([Barrel(i) for i in range(BARREL_POOL_SIZE)])
@@ -44,6 +48,9 @@ class Match:
         self.check_end_match_thread = Thread(target=self.__check_end_match_thread_do_work)
         self.princess_collision_thread = Thread(target=self.__princess_collision_thread_do_work)
         self.gorilla_thread = Thread(target=self.__gorilla_thread_do_work)
+        self.gorilla_collision_thread = Thread(target=self.__gorilla_collision_thread_do_work)
+        self.coin_thread = Thread(target=self.__coin_thread_do_work)
+
 
     """ Starts object threads """
     def start_threads(self):
@@ -51,7 +58,9 @@ class Match:
         self.barrels_fall_thread.start()
         self.princess_collision_thread.start()
         self.gorilla_thread.start()
+        self.gorilla_collision_thread.start()
         self.check_end_match_thread.start()
+        self.coin_thread.start()
 
     """ Sets the scene layout, notifies players to load the scene """
     def load_scene(self):
@@ -66,6 +75,7 @@ class Match:
         elif self.current_scene == 5:
             self.set_level_layout(Layouts.FifthLevel)
 
+        self.barrel_speed /= BARREL_SPEED_MULTIPLIER
         message = json.dumps(
             { "command": ServerMessage.LOAD_GAME_SCENE.value, "layout": self.current_scene, "player": Player.PLAYER_1.value,
               "my_lives": self.players[0].lives, "opponent_lives": self.players[1].lives })
@@ -200,7 +210,7 @@ class Match:
                                         message = json.dumps({ "command": ServerMessage.MOVE_BARREL.value, "index": index })
                                         self.send_to_all(message)
                                         barrel.y += 5
-            time.sleep(0.03)
+            time.sleep(self.barrel_speed)
 
         thread_endpoint.send(Message(CCMethods.KILL_PROCESS))
         thread_endpoint.close()
@@ -224,6 +234,25 @@ class Match:
         thread_endpoint.send(Message(CCMethods.KILL_PROCESS))
         thread_endpoint.close()
 
+    """ Handles collision with gorilla """
+    def __gorilla_collision_thread_do_work(self):
+        thread_endpoint = self.__add_cc_endpoint()
+        while not self.__check_thread_kill():
+            if self.princess_reached is False and self.players[0].ready is True and self.players[1].ready is True:
+                for player in self.players:
+                    if player.x is not None and player.y is not None:
+                        thread_endpoint.send(Message(CCMethods.GORILLA_COLLISION, self.gorilla.x, self.gorilla.y, player.x, player.y))
+                        msg = thread_endpoint.recv()
+                        if msg.args[0]:
+                            self.__reset_player_pos(player)
+                            player.lose_life()
+                            message = json.dumps({ "command": ServerMessage.GORILLA_HIT.value, "lives": player.lives })
+                            player.send(message)
+                            message = json.dumps({ "command": ServerMessage.GORILLA_HIT_OPPONENT.value, "lives": player.lives })
+                            self.send_to_opponent(message, player)
+        thread_endpoint.send(Message(CCMethods.KILL_PROCESS))
+        thread_endpoint.close()
+
     """ Handles gorilla movement and barrel throwing """
     def __gorilla_thread_do_work(self):
         count = 0
@@ -238,6 +267,65 @@ class Match:
                     time.sleep(0.2)
 
                 count += 1
+
+    """ Handles coin drawing and removal """
+    def __coin_thread_do_work(self):
+        thread_endpoint = self.__add_cc_endpoint()
+        while not self.__check_thread_kill():
+            if self.princess_reached is False and self.players[0].ready is True and self.players[1].ready is True:
+                if self.coin.drawn is False:
+                    time.sleep(10)
+                    self.__coin_set_position()
+                    self.coin.drawn = True
+                    message = json.dumps({ "command": ServerMessage.DRAW_COIN.value, "x": self.coin.x, "y": self.coin.y })
+                    self.send_to_all(message)
+                else:
+                    for player in self.players:
+                        if player.x is not None and player.y is not None:
+                            thread_endpoint.send(Message(CCMethods.COIN_COLLISION, self.coin.x, self.coin.y, player.x, player.y))
+                            msg = thread_endpoint.recv()
+
+                            if msg.args[0]:
+                                self.coin.drawn = False
+                                message = json.dumps({ "command": ServerMessage.REMOVE_COIN.value })
+                                self.send_to_all(message)
+                                self.__coin_add_effect(player)
+
+        thread_endpoint.send(Message(CCMethods.KILL_PROCESS))
+        thread_endpoint.close()
+
+    """ Sets coin position """
+    def __coin_set_position(self):
+        rows = int(SCENE_HEIGHT / SCENE_GRID_BLOCK_HEIGHT)
+        columns = int(SCENE_WIDTH / SCENE_GRID_BLOCK_WIDTH)
+
+        while True:
+            row = np.random.randint(0, rows)
+            column = np.random.randint(0, columns)
+
+            if self.level_layout[row][column] == LayoutBlock.Platform:
+                break
+
+        self.coin.x = column * SCENE_GRID_BLOCK_WIDTH
+        self.coin.y = (row - 1) * SCENE_GRID_BLOCK_HEIGHT
+
+    """ Sends coin effect messages """
+    def __coin_add_effect(self, player: Client):
+        effect = np.random.randint(0, 2)
+        if effect == 0:
+            if player.lives == PLAYER_LIVES:
+                return
+            player.lives += 1
+            message = json.dumps({ "command": ServerMessage.EFFECT_GAIN_LIFE.value, "lives": player.lives })
+            player.send(message)
+            message = json.dumps({ "command": ServerMessage.EFFECT_GAIN_LIFE_OPPONENT.value, "lives": player.lives })
+            self.send_to_opponent(message, player)
+        elif effect == 1:
+            player.lives -= 1
+            message = json.dumps({ "command": ServerMessage.EFFECT_LOSE_LIFE.value, "lives": player.lives })
+            player.send(message)
+            message = json.dumps({ "command": ServerMessage.EFFECT_LOSE_LIFE_OPPONENT.value, "lives": player.lives })
+            self.send_to_opponent(message, player)
 
     """ Notifies both players to move the gorilla """
     def __gorilla_move(self):
@@ -356,14 +444,20 @@ class Match:
         message = json.dumps({ "command": ServerMessage.MATCH_ENDED.value })
         self.send_to_all(message)
 
-        if self.barrels_fall_thread.isAlive():
+        if self.barrels_fall_thread.isAlive() and threading.current_thread() != self.barrels_fall_thread:
             self.barrels_fall_thread.join()
-        if self.players_falling_thread.isAlive():
+        if self.players_falling_thread.isAlive() and threading.current_thread() != self.players_falling_thread:
             self.players_falling_thread.join()
-        if self.princess_collision_thread.isAlive():
+        if self.princess_collision_thread.isAlive() and threading.current_thread() != self.princess_collision_thread:
             self.princess_collision_thread.join()
-        if self.gorilla_thread.isAlive():
+        if self.gorilla_thread.isAlive() and threading.current_thread() != self.gorilla_thread:
             self.gorilla_thread.join()
+        if self.gorilla_collision_thread.isAlive() and threading.current_thread() != self.gorilla_collision_thread:
+            self.gorilla_collision_thread.join()
+        if self.check_end_match_thread.isAlive() and threading.current_thread() != self.check_end_match_thread:
+            self.check_end_match_thread.join()
+        if self.coin_thread.isAlive() and threading.current_thread() != self.coin_thread:
+            self.coin_thread.join()
 
         self.cc_endpoint.send(Message(CCMethods.KILL_PROCESS))
         if self.__parent__.matches.__contains__(self):

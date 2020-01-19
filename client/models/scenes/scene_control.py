@@ -57,6 +57,9 @@ class SceneControl(QObject):
 
     """ Sends a request for a game """
     def find_game(self):
+        if self.socket is None:
+            self.setup_socket()
+
         message = json.dumps({ "command": ClientMessage.REQUEST_GAME.value })
         self.socket.send_to_server(message)
 
@@ -74,6 +77,7 @@ class SceneControl(QObject):
             self.__process_opponent_movement_messages(message)
             self.__process_barrel_messages(message)
             self.__process_gorilla_messages(message)
+            self.__process_coin_messages(message)
 
     """ Stops running threads and closes connection to server """
     def cleanup(self):
@@ -116,11 +120,9 @@ class SceneControl(QObject):
             elif message['command'] == ServerMessage.CLIMB_DOWN.value:
                 self.current_scene.me.climb_down_signal.emit(ClimbState(message['climb_state']))
             elif message['command'] == ServerMessage.SET_POINTS.value:
-                print(message['points'])
                 self.my_score = message['points']
                 self.current_scene.me.update_points_signal.emit(message['points'])
             elif message['command'] == ServerMessage.SET_POINTS_OPPONENT.value:
-                print(message['points'])
                 self.opponent_score = message['points']
                 self.current_scene.opponent.update_points_signal.emit(message['points'])
 
@@ -159,11 +161,30 @@ class SceneControl(QObject):
         if isinstance(self.current_scene, GameScene):
             if message['command'] == ServerMessage.GORILLA_MOVE.value:
                 self.current_scene.gorilla.move_signal.emit(Direction(message['direction']))
-
-            if message['command'] == ServerMessage.GORILLA_THROW_BARREL.value:
+            elif message['command'] == ServerMessage.GORILLA_THROW_BARREL.value:
                 self.current_scene.gorilla.throw_start_signal.emit()
                 self.current_scene.barrel_pool[message['index']].item.setPos(message['x'], message['y'])
                 self.current_scene.barrel_pool[message['index']].draw_signal.emit()
+            elif message['command'] == ServerMessage.GORILLA_HIT.value:
+                self.current_scene.me.set_lives_signal.emit(message['lives'])
+            elif message['command'] == ServerMessage.GORILLA_HIT_OPPONENT.value:
+                self.current_scene.opponent.set_lives_signal.emit(message['lives'])
+
+    """ Handles coin messages """
+    def __process_coin_messages(self, message):
+        if isinstance(self.current_scene, GameScene):
+            if message['command'] == ServerMessage.DRAW_COIN.value:
+                self.current_scene.coin.draw_signal.emit(message['x'], message['y'])
+            elif message['command'] == ServerMessage.REMOVE_COIN.value:
+                self.current_scene.coin.remove_signal.emit()
+            elif message['command'] == ServerMessage.EFFECT_GAIN_LIFE.value:
+                self.current_scene.me.set_coin_life_signal.emit(message['lives'])
+            elif message['command'] == ServerMessage.EFFECT_GAIN_LIFE_OPPONENT.value:
+                self.current_scene.opponent.set_coin_life_signal.emit(message['lives'])
+            elif message['command'] == ServerMessage.EFFECT_LOSE_LIFE.value:
+                self.current_scene.me.set_coin_life_signal.emit(message['lives'])
+            elif message['command'] == ServerMessage.EFFECT_LOSE_LIFE_OPPONENT.value:
+                self.current_scene.opponent.set_coin_life_signal.emit(message['lives'])
 
     """ Loads scene layout and sets players lives """
     def __load_game_scene(self, layout, my_lives, opponent_lives):
