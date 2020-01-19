@@ -1,5 +1,4 @@
 import numpy as np
-
 from common.constants import SCENE_HEIGHT, SCENE_GRID_BLOCK_HEIGHT, SCENE_WIDTH, SCENE_GRID_BLOCK_WIDTH
 from common.enums.layout_block import LayoutBlock
 

@@ -1,7 +1,6 @@
 from PyQt5.QtCore import QObject, pyqtSignal
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QGraphicsPixmapItem
-
 from client.constants import IMAGES_DIR
 from common.enums.direction import Direction
 
@@ -12,18 +11,9 @@ class Gorilla(QObject):
     throw_start_signal = pyqtSignal()
     throw_finish_signal = pyqtSignal()
 
-    def __init__(self, parent, x, y):
+    def __init__(self, x, y):
         super().__init__()
-        self.__parent__ = parent
         self.item = QGraphicsPixmapItem()
-
-        self.latest_direction = None
-        self.current_direction = None
-
-        self.move_signal[Direction].connect(self.move)
-        self.animation_reset_signal[Direction].connect(self.reset_animation)
-        self.throw_start_signal.connect(self.throw_start)
-        self.throw_finish_signal.connect(self.throw_finish)
         self.current_frame_index = 0
         self.movement_frames = [
             QPixmap(IMAGES_DIR + 'gorilla/move/move_1.png'),
@@ -35,7 +25,13 @@ class Gorilla(QObject):
         self.item.setPixmap(self.movement_frames[0])
         self.item.setPos(x, y)
 
-    def animate(self):
+        self.move_signal[Direction].connect(self.__move)
+        self.animation_reset_signal[Direction].connect(self.__reset_animation)
+        self.throw_start_signal.connect(self.__throw_start)
+        self.throw_finish_signal.connect(self.__throw_finish)
+
+    """ Handles animations """
+    def __animate(self):
         count = len(self.movement_frames)
         if self.current_frame_index + 1 > count - 1:
             self.current_frame_index = 0
@@ -44,28 +40,34 @@ class Gorilla(QObject):
 
         self.item.setPixmap(self.movement_frames[self.current_frame_index])
 
-    def reset_animation(self, direction: Direction):
+    """ Resets animations """
+    def __reset_animation(self, direction: Direction):
         if direction == Direction.LEFT:
             self.item.setPixmap(self.movement_frames[0])
         elif direction == Direction.RIGHT:
             self.item.setPixmap(self.movement_frames[1])
 
-    def move(self, direction: Direction):
+    """ Handles movement """
+    def __move(self, direction: Direction):
         if direction == Direction.LEFT:
-            self.go_left()
+            self.__go_left()
         elif direction == Direction.RIGHT:
-            self.go_right()
+            self.__go_right()
 
-    def go_left(self):
-        self.animate()
+    """ Moves gorilla left """
+    def __go_left(self):
+        self.__animate()
         self.item.moveBy(-40, 0)
 
-    def go_right(self):
-        self.animate()
+    """ Moves gorilla right """
+    def __go_right(self):
+        self.__animate()
         self.item.moveBy(40, 0)
 
-    def throw_start(self):
+    """ Starts throwing animation """
+    def __throw_start(self):
         self.item.setPixmap(self.throw_frames[0])
 
-    def throw_finish(self):
+    """ Starts throw finish animation """
+    def __throw_finish(self):
         self.item.setPixmap(self.throw_frames[1])

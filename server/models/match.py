@@ -32,7 +32,6 @@ class Match:
         self.kill_thread = False
         self.kill_thread_lock = Lock()
         self.barrels_lock = Lock()
-        self.gorilla_lock = Lock()
         self.ending = False
         self.cc_endpoint = self.__add_cc_endpoint()
         self.level_layout = None
@@ -46,12 +45,41 @@ class Match:
         self.princess_collision_thread = Thread(target=self.__princess_collision_thread_do_work)
         self.gorilla_thread = Thread(target=self.__gorilla_thread_do_work)
 
+    """ Starts object threads """
     def start_threads(self):
         self.players_falling_thread.start()
         self.barrels_fall_thread.start()
         self.princess_collision_thread.start()
         self.gorilla_thread.start()
         self.check_end_match_thread.start()
+
+    """ Sets the scene layout, notifies players to load the scene """
+    def load_scene(self):
+        if self.current_scene == 1:
+            self.set_level_layout(Layouts.FirstLevel)
+        elif self.current_scene == 2:
+            self.set_level_layout(Layouts.SecondLevel)
+        elif self.current_scene == 3:
+            self.set_level_layout(Layouts.ThirdLevel)
+        elif self.current_scene == 4:
+            self.set_level_layout(Layouts.FourthLevel)
+        elif self.current_scene == 5:
+            self.set_level_layout(Layouts.FifthLevel)
+
+        message = json.dumps(
+            { "command": ServerMessage.LOAD_GAME_SCENE.value, "layout": self.current_scene, "player": Player.PLAYER_1.value,
+              "my_lives": self.players[0].lives, "opponent_lives": self.players[1].lives })
+        self.players[0].send(message)
+        message = json.dumps(
+            { "command": ServerMessage.LOAD_GAME_SCENE.value, "layout": self.current_scene, "player": Player.PLAYER_2.value,
+              "my_lives": self.players[1].lives, "opponent_lives": self.players[0].lives })
+        self.players[1].send(message)
+        self.__reset_barrels()
+        self.princess_reached = False
+        self.players[0].ready = False
+        self.players[1].ready = False
+        self.players[0].highest_y = 600
+        self.players[1].highest_y = 600
 
     """ Sends a message to all players in the match """
     def send_to_all(self, msg):
@@ -98,6 +126,7 @@ class Match:
         self.level_layout = get_level_layout(layout.value)
         self.__set_starting_pos()
 
+    """ Resets player lives """
     def reset_lives(self):
         for player in self.players:
             player.lives = PLAYER_LIVES
@@ -127,12 +156,14 @@ class Match:
         thread_endpoint.send(Message(CCMethods.KILL_PROCESS))
         thread_endpoint.close()
 
+    """ Checks if both players are dead """
     def __check_end_match_thread_do_work(self):
         while self.__check_thread_kill() is False and self.__check_end_match() is False:
             time.sleep(0.1)
 
         self.__end()
 
+    """ Handles barrel movement, removing and collision with players """
     def __barrels_fall_thread_do_work(self):
         thread_endpoint = self.__add_cc_endpoint()
         while not self.__check_thread_kill():
@@ -174,6 +205,7 @@ class Match:
         thread_endpoint.send(Message(CCMethods.KILL_PROCESS))
         thread_endpoint.close()
 
+    """ Handles collision with princess, starts next level upon collision """
     def __princess_collision_thread_do_work(self):
         thread_endpoint = self.__add_cc_endpoint()
         while not self.__check_thread_kill():
@@ -184,7 +216,7 @@ class Match:
                         msg = thread_endpoint.recv()
                         if msg.args[0]:
                             self.princess_reached = True
-                            self.set_current_scene()
+                            self.__set_current_scene()
                             self.load_scene()
 
             time.sleep(0.03)
@@ -192,6 +224,7 @@ class Match:
         thread_endpoint.send(Message(CCMethods.KILL_PROCESS))
         thread_endpoint.close()
 
+    """ Handles gorilla movement and barrel throwing """
     def __gorilla_thread_do_work(self):
         count = 0
         while not self.__check_thread_kill():
@@ -206,11 +239,10 @@ class Match:
 
                 count += 1
 
+    """ Notifies both players to move the gorilla """
     def __gorilla_move(self):
         random_direction = random.choice([Direction.LEFT, Direction.RIGHT])
-        self.gorilla_lock.acquire()
         x = int(self.gorilla.x / SCENE_GRID_BLOCK_WIDTH)
-        self.gorilla_lock.release()
         if random_direction == Direction.LEFT:
             if not x <= self.gorilla.bound_start:
                 move_direction = Direction.LEFT
@@ -230,6 +262,7 @@ class Match:
         message = json.dumps({ "command": ServerMessage.GORILLA_MOVE.value, "direction": move_direction.value })
         self.send_to_all(message)
 
+    """ Notifies both players to draw a barrel """
     def __gorilla_throw_barrel(self):
         for barrel in self.barrels:
             if not barrel.drawn:
@@ -240,12 +273,20 @@ class Match:
                 self.send_to_all(message)
                 break
 
+    """ Thread safe check if threads should terminate """
     def __check_thread_kill(self):
         self.kill_thread_lock.acquire()
         ret_val = self.kill_thread
         self.kill_thread_lock.release()
         return ret_val
 
+    """ Checks if both players are dead """
+    def __check_end_match(self) -> bool:
+        if self.players[0].lives == 0 and self.players[1].lives == 0:
+            return True
+        return False
+
+    """ Notifies both players to move the player avatar left """
     def __move_left(self, player: Client, msg: Message):
         # player is not at the edge of the screen
         if not msg.args[0]:
@@ -261,6 +302,7 @@ class Match:
             message = json.dumps({ "command": ServerMessage.STOP_OPPONENT.value })
             self.send_to_opponent(message, player)
 
+    """ Notifies both players to move the player avatar right """
     def __move_right(self, player: Client, msg: Message):
         # player is not at the edge of the screen
         if not msg.args[0]:
@@ -276,6 +318,7 @@ class Match:
             message = json.dumps({ "command": ServerMessage.STOP_OPPONENT.value })
             self.send_to_opponent(message, player)
 
+    """ Notifies both players to move the player avatar up """
     def __move_up(self, player: Client, msg: Message):
         if msg.args[0] == ClimbState.CLIMB or msg.args[0] == ClimbState.FINISH:
             player.y -= 5
@@ -294,6 +337,7 @@ class Match:
         message = json.dumps({ "command": ServerMessage.CLIMB_UP_OPPONENT.value, "climb_state": msg.args[0].value })
         self.send_to_opponent(message, player)
 
+    """ Notifies both players to move the player avatar down """
     def __move_down(self, player: Client, msg: Message):
         if msg.args[0] == ClimbState.CLIMB or msg.args[0] == ClimbState.FINISH:
             player.y += 5
@@ -308,7 +352,6 @@ class Match:
         self.kill_thread_lock.acquire()
         self.kill_thread = True
         self.kill_thread_lock.release()
-
         self.ending = True
         message = json.dumps({ "command": ServerMessage.MATCH_ENDED.value })
         self.send_to_all(message)
@@ -332,6 +375,7 @@ class Match:
         self.__parent__.cc_endpoint.send(Message(CCMethods.ADD_ENDPOINT, child))
         return parent
 
+    """ Sets starting positions for players, princess, gorilla and gorilla movement boundaries """
     def __set_starting_pos(self):
         rows = int(SCENE_HEIGHT / SCENE_GRID_BLOCK_HEIGHT)
         columns = int(SCENE_WIDTH / SCENE_GRID_BLOCK_WIDTH)
@@ -365,50 +409,21 @@ class Match:
                 self.gorilla.bound_end = i - 1
                 break
 
-    def __check_end_match(self) -> bool:
-        if self.players[0].lives == 0 and self.players[1].lives == 0:
-            return True
-        return False
-
-    def __reset_player_pos(self, player: Client):
-        player.x = player.starting_x
-        player.y = player.starting_y
-
-    def set_current_scene(self):
+    """ Sets the current layout of the scene """
+    def __set_current_scene(self):
         if self.current_scene == 5:
             self.current_scene = 1
         else:
             self.current_scene += 1
 
-    def reset_barrels(self):
+    """ Resets player positions to their starting ones fot that scene """
+    def __reset_player_pos(self, player: Client):
+        player.x = player.starting_x
+        player.y = player.starting_y
+
+    """ Thread safe deleting of all barrels """
+    def __reset_barrels(self):
         self.barrels_lock.acquire()
         for barrel in self.barrels:
             barrel.drawn = False
         self.barrels_lock.release()
-
-    def load_scene(self):
-        if self.current_scene == 1:
-            self.set_level_layout(Layouts.FirstLevel)
-        elif self.current_scene == 2:
-            self.set_level_layout(Layouts.SecondLevel)
-        elif self.current_scene == 3:
-            self.set_level_layout(Layouts.ThirdLevel)
-        elif self.current_scene == 4:
-            self.set_level_layout(Layouts.FourthLevel)
-        elif self.current_scene == 5:
-            self.set_level_layout(Layouts.FifthLevel)
-
-        message = json.dumps(
-            { "command": ServerMessage.LOAD_GAME_SCENE.value, "layout": self.current_scene, "player": Player.PLAYER_1.value,
-              "my_lives": self.players[0].lives, "opponent_lives": self.players[1].lives })
-        self.players[0].send(message)
-        message = json.dumps(
-            { "command": ServerMessage.LOAD_GAME_SCENE.value, "layout": self.current_scene, "player": Player.PLAYER_2.value,
-              "my_lives": self.players[1].lives, "opponent_lives": self.players[0].lives })
-        self.players[1].send(message)
-        self.reset_barrels()
-        self.princess_reached = False
-        self.players[0].ready = False
-        self.players[1].ready = False
-        self.players[0].highest_y = 600
-        self.players[1].highest_y = 600

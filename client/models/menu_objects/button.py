@@ -1,7 +1,6 @@
 from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QGraphicsPixmapItem, QGraphicsObject
-
 from client.models.enums.button_state import ButtonState
 
 
@@ -13,7 +12,7 @@ class Button(QGraphicsObject):
         super().__init__()
         self.func = func
         self.func_param = func_param
-        self.state_changed.connect(self.state_changed_handler)
+        self.state_changed.connect(self.__state_changed_handler)
 
         self.normalImage = QPixmap(normal)
         self.highlightImage = QPixmap(highlight)
@@ -22,21 +21,21 @@ class Button(QGraphicsObject):
         self.graphics_item.setPos(x, y)
         self.set_state(state)
 
-    def get_state(self):
-        return self.state
-
+    """ Changes button state """
     def set_state(self, state):
         self.state = state
         self.state_changed.emit()
 
+    """ Executes button logic """
     def execute(self):
         if self.func_param is None:
             return self.func()
         else:
             return self.func(self.func_param)
 
-    def state_changed_handler(self):
-        if self.get_state() is ButtonState.NORMAL:
+    """ Changes button image """
+    def __state_changed_handler(self):
+        if self.state is ButtonState.NORMAL:
             self.graphics_item.setPixmap(self.normalImage)
-        elif self.get_state() is ButtonState.HIGHLIGHTED:
+        elif self.state is ButtonState.HIGHLIGHTED:
             self.graphics_item.setPixmap(self.highlightImage)

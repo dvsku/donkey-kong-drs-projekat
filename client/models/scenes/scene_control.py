@@ -1,12 +1,11 @@
 import json
 import re
+import sys
 from json import JSONDecodeError
-
 from PyQt5.QtCore import Qt, QObject, pyqtSignal
 from PyQt5.QtGui import QBrush
 from PyQt5.QtWidgets import QGraphicsView
-
-from client.models.abstract.game_scene import GameScene
+from client.models.scenes.game_scene import GameScene
 from client.models.networking.client_socket import ClientSocket
 from client.models.scenes.main_menu import MainMenu
 from client.models.scenes.match_end import MatchEnd
@@ -30,7 +29,8 @@ class SceneControl(QObject):
         self.__parent__ = parent
         self.current_scene = None
         self.player = None
-
+        self.my_score = 0
+        self.opponent_score = 0
         self.view = QGraphicsView()
         self.view.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.view.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
@@ -38,25 +38,29 @@ class SceneControl(QObject):
         self.view.setBackgroundBrush(QBrush(Qt.black))
         self.socket = None
 
-        self.load_game_scene_signal[int, int, int].connect(self.load_game_scene)
+        self.load_game_scene_signal[int, int, int].connect(self.__load_game_scene)
         self.load_info_scene_signal[int].connect(self.load_info_scene)
 
         self.load_info_scene(InfoScenes.MAIN_MENU.value)
 
+    """ Tries to connect to server """
     def setup_socket(self):
         try:
             self.socket = ClientSocket(self)
         except ConnectionError:
             print("Could not connect to server.")
-            self.close_game()
+            sys.exit()
 
+    """ Shows the scene """
     def show_scene(self):
         self.view.show()
 
+    """ Sends a request for a game """
     def find_game(self):
         message = json.dumps({ "command": ClientMessage.REQUEST_GAME.value })
         self.socket.send_to_server(message)
 
+    """ Handles server messages """
     def process_socket_message(self, msg):
         messages = re.findall(r'({(.*?)})', msg)
         for message in messages:
@@ -65,33 +69,46 @@ class SceneControl(QObject):
             except JSONDecodeError:
                 return
 
-            self.process_connection_messages(message)
-            self.process_scene_messages(message)
-            self.process_self_movement_messages(message)
-            self.process_opponent_movement_messages(message)
-            self.process_barrel_messages(message)
-            self.process_gorilla_messages(message)
+            self.__process_scene_messages(message)
+            self.__process_self_movement_messages(message)
+            self.__process_opponent_movement_messages(message)
+            self.__process_barrel_messages(message)
+            self.__process_gorilla_messages(message)
 
-    def process_connection_messages(self, message):
-        if message['command'] == ServerMessage.CONNECTION_ACK.value:
-            self.socket.connection_established = True
-        elif message['command'] == ServerMessage.MATCH_ENDED.value:
-            self.load_info_scene_signal.emit(InfoScenes.MAIN_MENU.value)
+    """ Stops running threads and closes connection to server """
+    def cleanup(self):
+        self.__cleanup_scene()
 
-    def process_scene_messages(self, message):
+        if self.socket is not None:
+            message = json.dumps({ "command": ClientMessage.CLOSE.value })
+            self.socket.send_to_server(message)
+            self.socket.close()
+
+    """ Closes the game """
+    def close_game(self):
+        self.__parent__.quit()
+
+    """ Handles scene changes messages """
+    def __process_scene_messages(self, message):
         if message['command'] == ServerMessage.LOAD_GAME_SCENE.value:
             self.player = Player(message['player'])
+            self.my_score = 0
+            self.opponent_score = 0
             self.load_game_scene_signal.emit(message['layout'], message['my_lives'], message['opponent_lives'])
         elif message['command'] == ServerMessage.LOAD_INFO_SCENE.value:
             self.load_info_scene_signal.emit(message['scene'])
+        elif message['command'] == ServerMessage.MATCH_ENDED.value:
+            self.load_info_scene_signal.emit(InfoScenes.MATCH_END.value)
 
-    def process_self_movement_messages(self, message):
+    """ Handles my movement messages """
+    def __process_self_movement_messages(self, message):
         if isinstance(self.current_scene, GameScene):
             if message['command'] == ServerMessage.MOVE.value:
                 self.current_scene.me.latest_direction = Direction(message['direction'])
                 self.current_scene.me.move_signal.emit(Direction(message['direction']))
             elif message['command'] == ServerMessage.STOP.value:
-                self.current_scene.me.animation_reset_signal.emit(self.current_scene.me.latest_direction)
+                if self.current_scene.me.latest_direction is not None:
+                    self.current_scene.me.animation_reset_signal.emit(self.current_scene.me.latest_direction)
             elif message['command'] == ServerMessage.FALL.value:
                 self.current_scene.me.fall_signal.emit()
             elif message['command'] == ServerMessage.CLIMB_UP.value:
@@ -99,17 +116,23 @@ class SceneControl(QObject):
             elif message['command'] == ServerMessage.CLIMB_DOWN.value:
                 self.current_scene.me.climb_down_signal.emit(ClimbState(message['climb_state']))
             elif message['command'] == ServerMessage.SET_POINTS.value:
+                print(message['points'])
+                self.my_score = message['points']
                 self.current_scene.me.update_points_signal.emit(message['points'])
             elif message['command'] == ServerMessage.SET_POINTS_OPPONENT.value:
+                print(message['points'])
+                self.opponent_score = message['points']
                 self.current_scene.opponent.update_points_signal.emit(message['points'])
 
-    def process_opponent_movement_messages(self, message):
+    """ Handles opponent's movement messages """
+    def __process_opponent_movement_messages(self, message):
         if isinstance(self.current_scene, GameScene):
             if message['command'] == ServerMessage.MOVE_OPPONENT.value:
                 self.current_scene.opponent.latest_direction = Direction(message['direction'])
                 self.current_scene.opponent.move_signal.emit(Direction(message['direction']))
             elif message['command'] == ServerMessage.STOP_OPPONENT.value:
-                self.current_scene.opponent.animation_reset_signal.emit(self.current_scene.opponent.latest_direction)
+                if self.current_scene.opponent.latest_direction is not None:
+                    self.current_scene.opponent.animation_reset_signal.emit(self.current_scene.opponent.latest_direction)
             elif message['command'] == ServerMessage.FALL_OPPONENT.value:
                 self.current_scene.opponent.fall_signal.emit()
             elif message['command'] == ServerMessage.CLIMB_UP_OPPONENT.value:
@@ -117,12 +140,10 @@ class SceneControl(QObject):
             elif message['command'] == ServerMessage.CLIMB_DOWN_OPPONENT.value:
                 self.current_scene.opponent.climb_down_signal.emit(ClimbState(message['climb_state']))
 
-    def process_barrel_messages(self, message):
+    """ Handles barrel removal and collision """
+    def __process_barrel_messages(self, message):
         if isinstance(self.current_scene, GameScene):
-            if message['command'] == ServerMessage.DRAW_BARREL.value:
-                self.current_scene.barrel_pool[message['index']].item.setPos(message['x'], message['y'])
-                self.current_scene.barrel_pool[message['index']].draw_signal.emit()
-            elif message['command'] == ServerMessage.REMOVE_BARREL.value:
+            if message['command'] == ServerMessage.REMOVE_BARREL.value:
                 self.current_scene.barrel_pool[message['index']].remove_signal.emit()
             elif message['command'] == ServerMessage.MOVE_BARREL.value:
                 self.current_scene.barrel_pool[message['index']].fall_signal.emit()
@@ -133,7 +154,8 @@ class SceneControl(QObject):
                 self.current_scene.barrel_pool[message['index']].remove_signal.emit()
                 self.current_scene.opponent.set_lives_signal.emit(message['lives'])
 
-    def process_gorilla_messages(self, message):
+    """ Handles gorilla movement and throwing """
+    def __process_gorilla_messages(self, message):
         if isinstance(self.current_scene, GameScene):
             if message['command'] == ServerMessage.GORILLA_MOVE.value:
                 self.current_scene.gorilla.move_signal.emit(Direction(message['direction']))
@@ -143,7 +165,8 @@ class SceneControl(QObject):
                 self.current_scene.barrel_pool[message['index']].item.setPos(message['x'], message['y'])
                 self.current_scene.barrel_pool[message['index']].draw_signal.emit()
 
-    def load_game_scene(self, layout, my_lives, opponent_lives):
+    """ Loads scene layout and sets players lives """
+    def __load_game_scene(self, layout, my_lives, opponent_lives):
         if not isinstance(self.current_scene, GameScene):
             self.current_scene = GameScene(self, self.player)
             self.view.setScene(self.current_scene)
@@ -166,8 +189,9 @@ class SceneControl(QObject):
         message = json.dumps({ "command": ClientMessage.READY.value })
         self.socket.send_to_server(message)
 
+    """ Loads an info scene """
     def load_info_scene(self, scene):
-        self.cleanup_scene()
+        self.__cleanup_scene()
         if scene == InfoScenes.MAIN_MENU.value:
             self.current_scene = MainMenu(self)
         elif scene == InfoScenes.WAITING_FOR_PLAYERS.value:
@@ -177,17 +201,7 @@ class SceneControl(QObject):
 
         self.view.setScene(self.current_scene)
 
-    def cleanup_scene(self):
+    """ Stops running threads """
+    def __cleanup_scene(self):
         if isinstance(self.current_scene, GameScene) and self.current_scene is not None:
             self.current_scene.kill_thread = True
-
-    def cleanup(self):
-        self.cleanup_scene()
-
-        if self.socket is not None:
-            message = json.dumps({"command": ClientMessage.CLOSE.value})
-            self.socket.send_to_server(message)
-            self.socket.close()
-
-    def close_game(self):
-        self.__parent__.close_game()

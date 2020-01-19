@@ -1,7 +1,6 @@
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QGraphicsPixmapItem
-
 from client.constants import IMAGES_DIR
 from client.models.abstract.info_scene import InfoScene
 from client.models.enums.button_state import ButtonState
@@ -15,11 +14,6 @@ class MainMenu(InfoScene):
         super().__init__()
         self.__parent__ = parent
 
-        # self.foreground = QGraphicsRectItem()
-        # self.foreground.setZValue(2)
-        # self.foreground.setRect(-1, -1, SCENE_WIDTH + 2, SCENE_HEIGHT + 2)
-        # self.foreground.setBrush(QBrush(Qt.black))
-
         self.logo = QGraphicsPixmapItem()
         self.logo.setPixmap(QPixmap(IMAGES_DIR + "menu/logo.png"))
         self.logo.setPos((SCENE_WIDTH - 600) / 2, 50)
@@ -32,20 +26,31 @@ class MainMenu(InfoScene):
                    IMAGES_DIR + "menu/quit_highlighted.png", ButtonState.NORMAL)
         ]
 
-        # self.addItem(self.foreground)
         self.addItem(self.logo)
-        self.draw_menu_buttons()
+        self.__draw_menu_buttons()
 
-    def draw_menu_buttons(self):
+    """ Handles keyboard presses """
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key_W:
+            self.__change_button_focus(Direction.UP)
+        elif event.key() == Qt.Key_S:
+            self.__change_button_focus(Direction.DOWN)
+        elif event.key() == Qt.Key_Return:
+            self.__execute_button()
+
+    """ Draws buttons in the scene """
+    def __draw_menu_buttons(self):
         for button in self.buttons:
             self.addItem(button.graphics_item)
 
-    def execute_button(self):
+    """ Executes button logic """
+    def __execute_button(self):
         for index in range(len(self.buttons)):
-            if self.buttons[index].get_state() is ButtonState.HIGHLIGHTED:
+            if self.buttons[index].state is ButtonState.HIGHLIGHTED:
                 self.buttons[index].execute()
 
-    def change_button_focus(self, direction: Direction):
+    """ Changes button focus """
+    def __change_button_focus(self, direction: Direction):
         if direction is None:
             return
 
@@ -53,7 +58,7 @@ class MainMenu(InfoScene):
         old_index = -1
         new_index = -1
         for index in range(count):
-            if self.buttons[index].get_state() is ButtonState.HIGHLIGHTED:
+            if self.buttons[index].state is ButtonState.HIGHLIGHTED:
                 old_index = index
                 if direction is Direction.UP:
                     if index - 1 > 0:
@@ -68,11 +73,3 @@ class MainMenu(InfoScene):
 
         self.buttons[old_index].set_state(ButtonState.NORMAL)
         self.buttons[new_index].set_state(ButtonState.HIGHLIGHTED)
-
-    def keyPressEvent(self, event):
-        if event.key() == Qt.Key_Up:
-            self.change_button_focus(Direction.UP)
-        elif event.key() == Qt.Key_Down:
-            self.change_button_focus(Direction.DOWN)
-        elif event.key() == Qt.Key_Return:
-            self.execute_button()

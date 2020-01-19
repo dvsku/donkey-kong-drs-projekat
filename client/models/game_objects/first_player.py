@@ -1,6 +1,4 @@
-from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap
-
 from client.constants import IMAGES_DIR
 from client.models.abstract.playable_character import PlayableCharacter
 
@@ -8,9 +6,6 @@ from client.models.abstract.playable_character import PlayableCharacter
 class FirstPlayer(PlayableCharacter):
     def __init__(self, parent):
         super().__init__(parent)
-
-        self.action_keys = [Qt.Key_W, Qt.Key_S, Qt.Key_A, Qt.Key_D]
-
         self.current_frame_index = 0
         self.movement_frames_left = [
             QPixmap(IMAGES_DIR + "first_player/move/move_left_1.png"),

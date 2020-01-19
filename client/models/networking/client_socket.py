@@ -1,7 +1,6 @@
 import json
 from socket import *
 from threading import Thread
-
 from common.enums.client_message import ClientMessage
 
 
@@ -9,31 +8,33 @@ class ClientSocket:
     def __init__(self, parent):
         self.__parent__ = parent
         self.socket = None
-        self.connection_established = False
         self.kill_thread = False
-        self.thread = Thread(target=self.do_work)
+        self.thread = Thread(target=self.__do_work)
         self.establish_connection()
         self.thread.start()
 
+    """ Connects to the server """
     def establish_connection(self):
-        if not self.connection_established:
-            self.socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)
-            self.socket.connect((gethostname(), 1234))
-            self.socket.settimeout(2)
-            message = json.dumps({ "command": ClientMessage.CONNECTION_ESTABLISHED.value })
-            self.send_to_server(message)
+        self.socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)
+        self.socket.connect((gethostname(), 1234))
+        self.socket.settimeout(2)
+        message = json.dumps({ "command": ClientMessage.CONNECTION_ESTABLISHED.value })
+        self.send_to_server(message)
 
+    """ Sends a message to the server """
     def send_to_server(self, msg):
         try:
             self.socket.send(bytes(msg, 'utf-8'))
         except ConnectionResetError:
             pass
 
+    """ Closes the connection """
     def close(self):
         self.socket.close()
         self.kill_thread = True
 
-    def do_work(self):
+    """ Receives server messages """
+    def __do_work(self):
         while True:
             try:
                 if self.kill_thread:

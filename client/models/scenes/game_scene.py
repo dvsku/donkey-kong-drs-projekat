@@ -3,8 +3,7 @@ import time
 from threading import Thread
 import numpy as np
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QPen, QColor, QFont
-from PyQt5.QtWidgets import QGraphicsScene, QGraphicsTextItem
+from PyQt5.QtWidgets import QGraphicsScene
 from client.models.game_objects.barrel import Barrel
 from client.models.game_objects.first_player import FirstPlayer
 from client.models.game_objects.second_player import SecondPlayer
@@ -21,36 +20,34 @@ class GameScene(QGraphicsScene):
     def __init__(self, parent, me: Player):
         super().__init__()
         self.__parent__ = parent
-        self.grid = []
-        self.grid_visible = True
         self.kill_thread = False
         self.princess = None
         self.gorilla = None
         self.barrel_pool = np.array([Barrel(self, i) for i in range(BARREL_POOL_SIZE)])
         self.me = None
         self.opponent = None
-        self.set_players(me)
-        self.move_thread = Thread(target=self.move_thread_do_work)
+        self.__set_avatars(me)
+        self.move_thread = Thread(target=self.__move_thread_do_work)
         self.move_thread.start()
 
+    """ Clears previous layout, loads new one and sends position update """
     def load_layout_and_start(self, layout: Layouts):
-        self.clear_scene()
+        self.__clear_scene()
         grid_painter = GridPainter()
         grid_painter.paint_layout(self, get_level_layout(layout))
-        self.send_pos_update()
+        self.__send_pos_update()
 
-    def set_lives(self, mine: int, opponent: int):
-        self.me.set_lives(mine)
-        self.opponent.set_lives(opponent)
+    """ Handles keyboard key presses """
+    def keyPressEvent(self, event):
+        if event.key() in { Qt.Key_A, Qt.Key_D, Qt.Key_W, Qt.Key_S } and not event.key() in self.me.keys_pressed:
+            self.me.keys_pressed.add(event.key())
 
-    def set_players(self, me: Player):
-        if me == Player.PLAYER_1:
-            self.me = FirstPlayer(self)
-            self.opponent = SecondPlayer(self)
-        else:
-            self.me = SecondPlayer(self)
-            self.opponent = FirstPlayer(self)
+    """ Handles keyboard key releases """
+    def keyReleaseEvent(self, event):
+        if event.key() in self.me.keys_pressed:
+            self.me.keys_pressed.remove(event.key())
 
+    """ Draws lives images in the scene """
     def draw_lives(self):
         if isinstance(self.me, FirstPlayer):
             self.me.lives.setPos(0, 0)
@@ -61,11 +58,27 @@ class GameScene(QGraphicsScene):
         self.addItem(self.me.lives)
         self.addItem(self.opponent.lives)
 
+    """ Draws point counter in the scene """
     def draw_points(self):
         self.set_points_position()
         self.addItem(self.me.points)
         self.addItem(self.opponent.points)
 
+    """ Draws a barrel in the scene """
+    def draw_barrel(self, index):
+        self.addItem(self.barrel_pool[index].item)
+
+    """ Removes a barrel from the scene """
+    def remove_barrel(self, index):
+        if self.barrel_pool[index].item.scene() != 0:
+            self.removeItem(self.barrel_pool[index].item)
+
+    """ Changes my and opponents lives """
+    def set_lives(self, mine: int, opponent: int):
+        self.me.set_lives(mine)
+        self.opponent.set_lives(opponent)
+
+    """ Sets points position in the scene """
     def set_points_position(self):
         if isinstance(self.me, FirstPlayer):
             self.me.points.setPos(130, -5)
@@ -74,50 +87,22 @@ class GameScene(QGraphicsScene):
             self.me.points.setPos(SCENE_WIDTH - (130 + self.opponent.points.boundingRect().width()), -5)
             self.opponent.points.setPos(130, -5)
 
-    def draw_barrel(self, index):
-        self.addItem(self.barrel_pool[index].item)
+    """ Sets my avatar and opponents avatar """
+    def __set_avatars(self, me: Player):
+        if me == Player.PLAYER_1:
+            self.me = FirstPlayer(self)
+            self.opponent = SecondPlayer(self)
+        else:
+            self.me = SecondPlayer(self)
+            self.opponent = FirstPlayer(self)
 
-    def remove_barrel(self, index):
-        if self.barrel_pool[index].item.scene() != 0:
-            self.removeItem(self.barrel_pool[index].item)
-
-    def clear_scene(self):
+    """ Removes all items from the scene """
+    def __clear_scene(self):
         for item in self.items():
             self.removeItem(item)
 
-    def draw_grid(self):
-        rows = int(SCENE_WIDTH / SCENE_GRID_BLOCK_WIDTH)
-        columns = int(SCENE_HEIGHT / SCENE_GRID_BLOCK_HEIGHT)
-
-        for x in range(0, rows):
-            x_coordinate = x * SCENE_GRID_BLOCK_WIDTH
-            # draw a line from x_coordinate, 0 to x, SCENE_HEIGHT
-            self.grid.append(self.addLine(x_coordinate, 0, x_coordinate, SCENE_HEIGHT, QPen(QColor(255, 255, 255))))
-
-        for y in range(0, columns):
-            y_coordinate = y * SCENE_GRID_BLOCK_HEIGHT
-            # draw a line from 0, y_coordinate to SCENE_WIDTH, y_coordinate
-            self.grid.append(self.addLine(0, y_coordinate, SCENE_WIDTH, y_coordinate, QPen(QColor(255, 255, 255))))
-
-        for n in range(0, columns):
-            for m in range(0, rows):
-                font = QFont()
-                font.setPointSize(7)
-                text = QGraphicsTextItem("({}, {})".format(m, n))
-                text.setDefaultTextColor(Qt.white)
-                text.setFont(font)
-                text.setPos(m * SCENE_GRID_BLOCK_HEIGHT, n * SCENE_GRID_BLOCK_WIDTH)
-                self.addItem(text)
-                self.grid.append(text)
-
-        self.grid = np.asarray(self.grid)
-
-    def toggle_grid(self):
-        self.grid_visible = not self.grid_visible
-        for line in self.grid:
-            line.setVisible(self.grid_visible)
-
-    def move_self(self):
+    """ Sends request to server to move """
+    def __move_self(self):
         direction = None
         if Qt.Key_W in self.me.keys_pressed:
             direction = Direction.UP
@@ -136,10 +121,11 @@ class GameScene(QGraphicsScene):
             message = json.dumps({ "command": ClientMessage.MOVE.value, "direction": direction.value })
             self.__parent__.socket.send_to_server(message)
 
-    def move_thread_do_work(self):
+    """ Checks if keyboard keys are pressed and sends movement requests to the server """
+    def __move_thread_do_work(self):
         while not self.kill_thread:
             if len(self.me.keys_pressed) != 0:
-                self.move_self()
+                self.__move_self()
             else:
                 if self.me.latest_direction is not None:
                     self.me.animation_reset_signal.emit(self.me.latest_direction)
@@ -149,19 +135,7 @@ class GameScene(QGraphicsScene):
 
             time.sleep(0.02)
 
-    def send_pos_update(self):
+    """ Sends initial player positions to the server """
+    def __send_pos_update(self):
         message = json.dumps({"command": ClientMessage.POS.value, "x": self.me.item.x(), "y": self.me.item.y()})
         self.__parent__.socket.send_to_server(message)
-
-    def keyPressEvent(self, event):
-        if event.key() == Qt.Key_M:
-            self.toggle_grid()
-            return
-
-        if event.key() in {Qt.Key_A, Qt.Key_D, Qt.Key_W, Qt.Key_S} and not event.key() in self.me.keys_pressed:
-            self.me.keys_pressed.add(event.key())
-
-    def keyReleaseEvent(self, event):
-        if event.key() in self.me.keys_pressed:
-            self.me.keys_pressed.remove(event.key())
-

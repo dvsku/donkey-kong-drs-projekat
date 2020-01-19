@@ -1,6 +1,4 @@
-from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap
-
 from client.constants import IMAGES_DIR
 from client.models.abstract.playable_character import PlayableCharacter
 from common.constants import SCENE_WIDTH
@@ -9,9 +7,6 @@ from common.constants import SCENE_WIDTH
 class SecondPlayer(PlayableCharacter):
     def __init__(self, parent):
         super().__init__(parent)
-
-        self.action_keys = [Qt.Key_Up, Qt.Key_Down, Qt.Key_Left, Qt.Key_Right]
-
         self.current_frame_index = 0
         self.movement_frames_left = [
             QPixmap(IMAGES_DIR + "second_player/move/move_left_1.png"),

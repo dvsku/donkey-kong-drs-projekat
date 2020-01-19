@@ -12,6 +12,7 @@ class GridPainter:
     def __init__(self):
         pass
 
+    """ Paints objects inside layout to a scene """
     def paint_layout(self, scene, layout):
         rows = int(SCENE_HEIGHT / SCENE_GRID_BLOCK_HEIGHT)
         columns = int(SCENE_WIDTH / SCENE_GRID_BLOCK_WIDTH)
@@ -54,5 +55,5 @@ class GridPainter:
                     scene.princess = Princess(scene, column * SCENE_GRID_BLOCK_WIDTH, row * SCENE_GRID_BLOCK_HEIGHT)
                     scene.addItem(scene.princess.item)
                 elif layout[row][column] == LayoutBlock.Gorilla:
-                    scene.gorilla = Gorilla(scene, column * SCENE_GRID_BLOCK_WIDTH, row * SCENE_GRID_BLOCK_HEIGHT - 15)
+                    scene.gorilla = Gorilla(column * SCENE_GRID_BLOCK_WIDTH, row * SCENE_GRID_BLOCK_HEIGHT - 15)
                     scene.addItem(scene.gorilla.item)
