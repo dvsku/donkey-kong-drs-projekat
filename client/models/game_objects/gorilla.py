@@ -3,6 +3,7 @@ from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QGraphicsPixmapItem
 
 from client.constants import IMAGES_DIR
+from common.enums.direction import Direction
 
 
 class Gorilla(QObject):
@@ -11,12 +12,11 @@ class Gorilla(QObject):
     throw_start_signal = pyqtSignal()
     throw_finish_signal = pyqtSignal()
 
-    def __init__(self, parent):
+    def __init__(self, parent, x, y):
         super().__init__()
         self.__parent__ = parent
         self.item = QGraphicsPixmapItem()
 
-        self.randDirection = [Direction.LEFT, Direction.RIGHT]
         self.latest_direction = None
         self.current_direction = None
 
@@ -31,10 +31,8 @@ class Gorilla(QObject):
         ]
         self.throw_frames = [
             QPixmap(IMAGES_DIR + "gorilla/throw/throw_down.png"),
-            QPixmap(IMAGES_DIR + "gorilla/throw/throw_up.png")
-            ]
+            QPixmap(IMAGES_DIR + "gorilla/throw/throw_up.png")]
         self.item.setPixmap(self.movement_frames[0])
-        # self.item.setZValue(4)
         self.item.setPos(x, y)
 
     def animate(self):

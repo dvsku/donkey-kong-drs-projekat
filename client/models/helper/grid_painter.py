@@ -1,6 +1,5 @@
-from client.models.abstract.game_scene import GameScene
-from client.models.enums.paint_object import PaintObject
 from client.models.game_objects.first_player import FirstPlayer
+from client.models.game_objects.gorilla import Gorilla
 from client.models.game_objects.ladder import Ladder
 from client.models.game_objects.platform import Platform
 from client.models.game_objects.princess import Princess
@@ -10,10 +9,10 @@ from common.enums.layout_block import LayoutBlock
 
 
 class GridPainter:
-    def __init__(self, scene: GameScene):
-        self.scene = scene
+    def __init__(self):
+        pass
 
-    def paint_layout(self, layout):
+    def paint_layout(self, scene, layout):
         rows = int(SCENE_HEIGHT / SCENE_GRID_BLOCK_HEIGHT)
         columns = int(SCENE_WIDTH / SCENE_GRID_BLOCK_WIDTH)
 
@@ -22,32 +21,38 @@ class GridPainter:
                 if layout[row][column] == LayoutBlock.Platform:
                     temp = Platform()
                     temp.setPos(column * SCENE_GRID_BLOCK_WIDTH, row * SCENE_GRID_BLOCK_HEIGHT)
-                    self.scene.addItem(temp)
+                    scene.addItem(temp)
                 elif layout[row][column] == LayoutBlock.Ladder:
                     temp = Ladder()
                     temp.setPos(column * SCENE_GRID_BLOCK_WIDTH, row * SCENE_GRID_BLOCK_HEIGHT)
-                    self.scene.addItem(temp)
-
-    def paint_one(self, x: int, y: int, offset_x: int, offset_y: int, item: PaintObject):
-        if item == PaintObject.PRINCESS:
-            self.scene.princess = Princess(self.scene, x * SCENE_GRID_BLOCK_WIDTH + offset_x,
-                                           y * SCENE_GRID_BLOCK_HEIGHT + offset_y)
-            self.scene.addItem(self.scene.princess)
-        elif item == PaintObject.PLAYER_1:
-            if isinstance(self.scene.me, FirstPlayer):
-                self.scene.me.item.setPos(x * SCENE_GRID_BLOCK_WIDTH + offset_x,
-                                          y * SCENE_GRID_BLOCK_HEIGHT + offset_y)
-                self.scene.addItem(self.scene.me.item)
-            else:
-                self.scene.opponent.item.setPos(x * SCENE_GRID_BLOCK_WIDTH + offset_x,
-                                                y * SCENE_GRID_BLOCK_HEIGHT + offset_y)
-                self.scene.addItem(self.scene.opponent.item)
-        elif item == PaintObject.PLAYER_2:
-            if isinstance(self.scene.me, SecondPlayer):
-                self.scene.me.item.setPos(x * SCENE_GRID_BLOCK_WIDTH + offset_x,
-                                          y * SCENE_GRID_BLOCK_HEIGHT + offset_y)
-                self.scene.addItem(self.scene.me.item)
-            else:
-                self.scene.opponent.item.setPos(x * SCENE_GRID_BLOCK_WIDTH + offset_x,
-                                                y * SCENE_GRID_BLOCK_HEIGHT + offset_y)
-                self.scene.addItem(self.scene.opponent.item)
+                    scene.addItem(temp)
+                elif layout[row][column] == LayoutBlock.Player_1:
+                    if isinstance(scene.me, FirstPlayer):
+                        scene.me.starting_x = column * SCENE_GRID_BLOCK_WIDTH
+                        scene.me.starting_y = row * SCENE_GRID_BLOCK_HEIGHT + 5
+                        scene.me.item.setPos(scene.me.starting_x, scene.me.starting_y)
+                        scene.addItem(scene.me.item)
+                    else:
+                        scene.opponent.starting_x = column * SCENE_GRID_BLOCK_WIDTH
+                        scene.opponent.starting_y = row * SCENE_GRID_BLOCK_HEIGHT + 5
+                        scene.opponent.item.setPos(scene.opponent.starting_x, scene.opponent.starting_y)
+                        scene.addItem(scene.opponent.item)
+                    layout[row][column] = None
+                elif layout[row][column] == LayoutBlock.Player_2:
+                    if isinstance(scene.me, SecondPlayer):
+                        scene.me.starting_x = column * SCENE_GRID_BLOCK_WIDTH + 13
+                        scene.me.starting_y = row * SCENE_GRID_BLOCK_HEIGHT + 5
+                        scene.me.item.setPos(scene.me.starting_x, scene.me.starting_y)
+                        scene.addItem(scene.me.item)
+                    else:
+                        scene.opponent.starting_x = column * SCENE_GRID_BLOCK_WIDTH + 13
+                        scene.opponent.starting_y = row * SCENE_GRID_BLOCK_HEIGHT + 5
+                        scene.opponent.item.setPos(scene.opponent.starting_x, scene.opponent.starting_y)
+                        scene.addItem(scene.opponent.item)
+                    layout[row][column] = None
+                elif layout[row][column] == LayoutBlock.Princess:
+                    scene.princess = Princess(scene, column * SCENE_GRID_BLOCK_WIDTH, row * SCENE_GRID_BLOCK_HEIGHT)
+                    scene.addItem(scene.princess.item)
+                elif layout[row][column] == LayoutBlock.Gorilla:
+                    scene.gorilla = Gorilla(scene, column * SCENE_GRID_BLOCK_WIDTH, row * SCENE_GRID_BLOCK_HEIGHT - 15)
+                    scene.addItem(scene.gorilla.item)

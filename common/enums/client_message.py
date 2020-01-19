@@ -8,3 +8,4 @@ class ClientMessage(Enum):
     STOP = 3
     POS = 4
     CLOSE = 9
+    READY = 10

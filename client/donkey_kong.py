@@ -9,16 +9,17 @@ from client.models.scenes.scene_control import SceneControl
 class DonkeyKong(QApplication):
     def __init__(self, args):
         super().__init__(args)
-
-        self.setApplicationName("Donkey Kong")
         self.scene_control = SceneControl(self)
+        self.scene_control.setup_socket()
+        self.scene_control.show_scene()
+        self.setApplicationName("Donkey Kong")
         self.aboutToQuit.connect(self.cleanup)
 
     def cleanup(self):
         self.scene_control.cleanup()
 
     def close_game(self):
-        self.quit()
+        sys.exit()
 
 
 # program entry point

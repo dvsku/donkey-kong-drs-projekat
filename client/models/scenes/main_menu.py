@@ -24,10 +24,9 @@ class MainMenu(InfoScene):
         self.logo.setPixmap(QPixmap(IMAGES_DIR + "menu/logo.png"))
         self.logo.setPos((SCENE_WIDTH - 600) / 2, 50)
 
-        self.buttons = [
-            Button(self.__parent__.setup_socket, None, (SCENE_WIDTH - 250) / 2, SCENE_HEIGHT - 250,
-                   IMAGES_DIR + "menu/start_normal.png",
-                   IMAGES_DIR + "menu/start_highlighted.png", ButtonState.HIGHLIGHTED),
+        self.buttons = [Button(self.__parent__.find_game, None, (SCENE_WIDTH - 250) / 2, SCENE_HEIGHT - 250,
+                               IMAGES_DIR + "menu/start_normal.png",
+                               IMAGES_DIR + "menu/start_highlighted.png", ButtonState.HIGHLIGHTED),
             Button(self.__parent__.close_game, None, (SCENE_WIDTH - 200) / 2, SCENE_HEIGHT - 175,
                    IMAGES_DIR + "menu/quit_normal.png",
                    IMAGES_DIR + "menu/quit_highlighted.png", ButtonState.NORMAL)

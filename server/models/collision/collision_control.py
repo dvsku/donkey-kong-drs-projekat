@@ -156,19 +156,43 @@ class CollisionControl(mp.Process):
     def check_barrel_collision(self, index, b_x, b_y, p_x, p_y):
         ret_val = True
 
-        barrel_pos_y = b_y
+        barrel_pos_y_from = b_y
+        barrel_pos_y_to = b_y + 29
         barrel_pos_x_from = b_x
         barrel_pos_x_to = barrel_pos_x_from + 29
-
-        player_pos_y = p_y
+        player_pos_y_from = p_y
+        player_pos_y_to = p_y + 35
         player_pos_x_from = p_x
         player_pos_x_to = p_x + 26
 
-        if barrel_pos_y <= player_pos_y:
+        if ((barrel_pos_y_from < player_pos_y_from) and (barrel_pos_y_to < player_pos_y_from)) or (
+                (barrel_pos_y_from > player_pos_y_to) and (barrel_pos_y_to > player_pos_y_to)):
             ret_val = False
 
         if ((barrel_pos_x_from < player_pos_x_from) and (barrel_pos_x_to < player_pos_x_from)) or \
                 ((barrel_pos_x_from > player_pos_x_to) and (barrel_pos_x_to > player_pos_x_to)):
+            ret_val = False
+
+        self.endpoints[index].send(Message(CCMethods.EMPTY, ret_val))
+
+    def check_princess_collision(self, index, pr_x, pr_y, p_x, p_y):
+        ret_val = True
+
+        princess_pos_y_from = pr_y
+        princess_pos_y_to = pr_y + 37
+        princess_pos_x_from = pr_x
+        princess_pos_x_to = pr_x + 34
+        player_pos_y_from = p_y
+        player_pos_y_to = p_y + 35
+        player_pos_x_from = p_x
+        player_pos_x_to = p_x + 26
+
+        if ((princess_pos_y_from < player_pos_y_from) and (princess_pos_y_to < player_pos_y_from)) or (
+                (princess_pos_y_from > player_pos_y_to) and (princess_pos_y_to > player_pos_y_to)):
+            ret_val = False
+
+        if ((princess_pos_x_from < player_pos_x_from) and (princess_pos_x_to < player_pos_x_from)) or (
+                (princess_pos_x_from > player_pos_x_to) and (princess_pos_x_to > player_pos_x_to)):
             ret_val = False
 
         self.endpoints[index].send(Message(CCMethods.EMPTY, ret_val))

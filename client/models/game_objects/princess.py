@@ -14,4 +14,4 @@ class Princess(QObject):
         self.item.setPixmap(QPixmap(IMAGES_DIR + "princess/princess.png"))
         # self.item.setZValue(2)
         self.item.setPos(x, y)
-        parent.addItem(HelpSign(self.x() + 45, self.y() - 35))
+        parent.addItem(HelpSign(x + 45, y - 35))

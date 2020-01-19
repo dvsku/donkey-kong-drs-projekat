@@ -6,3 +6,5 @@ class PaintObject(Enum):
     PLAYER_1 = 2
     PLAYER_2 = 3
     HELP_SIGN = 4
+    MY_LIVES = 5
+    OPPONENT_LIVES = 6

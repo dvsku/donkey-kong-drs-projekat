@@ -17,7 +17,14 @@ def get_level_layout(level: str):
                     layout[row][column] = LayoutBlock.Platform
                 elif line[column] == "L":
                     layout[row][column] = LayoutBlock.Ladder
-
+                elif line[column] == "1":
+                    layout[row][column] = LayoutBlock.Player_1
+                elif line[column] == "2":
+                    layout[row][column] = LayoutBlock.Player_2
+                elif line[column] == "p":
+                    layout[row][column] = LayoutBlock.Princess
+                elif line[column] == "G":
+                    layout[row][column] = LayoutBlock.Gorilla
             row += 1
             line = file.readline()
 

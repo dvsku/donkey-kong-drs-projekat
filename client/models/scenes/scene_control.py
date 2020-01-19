@@ -1,4 +1,5 @@
 import json
+import re
 from json import JSONDecodeError
 
 from PyQt5.QtCore import Qt, QObject, pyqtSignal
@@ -7,7 +8,6 @@ from PyQt5.QtWidgets import QGraphicsView
 
 from client.models.abstract.game_scene import GameScene
 from client.models.networking.client_socket import ClientSocket
-from client.models.scenes.first_level import FirstLevel
 from client.models.scenes.main_menu import MainMenu
 from client.models.scenes.match_end import MatchEnd
 from client.models.scenes.waiting_for_players import WaitingForPlayers
@@ -15,113 +15,164 @@ from common.constants import SCENE_WIDTH, SCENE_HEIGHT
 from common.enums.client_message import ClientMessage
 from common.enums.climb_state import ClimbState
 from common.enums.direction import Direction
+from common.enums.info_scenes import InfoScenes
+from common.enums.layout import Layouts
 from common.enums.player import Player
-from common.enums.scene import Scene
 from common.enums.server_message import ServerMessage
 
 
 class SceneControl(QObject):
-    load_scene_signal = pyqtSignal(int)
+    load_game_scene_signal = pyqtSignal(int, int, int)
+    load_info_scene_signal = pyqtSignal(int)
 
     def __init__(self, parent):
         super().__init__()
         self.__parent__ = parent
         self.current_scene = None
-
         self.player = None
 
         self.view = QGraphicsView()
         self.view.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.view.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.view.setFixedSize(SCENE_WIDTH + 3, SCENE_HEIGHT + 3)
-        self.view.show()
-
         self.view.setBackgroundBrush(QBrush(Qt.black))
         self.socket = None
 
-        self.load_scene_signal[int].connect(self.load_scene)
+        self.load_game_scene_signal[int, int, int].connect(self.load_game_scene)
+        self.load_info_scene_signal[int].connect(self.load_info_scene)
 
-        self.load_scene(Scene.MAIN_MENU.value)
+        self.load_info_scene(InfoScenes.MAIN_MENU.value)
 
     def setup_socket(self):
-        self.socket = ClientSocket(self)
+        try:
+            self.socket = ClientSocket(self)
+        except ConnectionError:
+            print("Could not connect to server.")
+            self.close_game()
+
+    def show_scene(self):
+        self.view.show()
+
+    def find_game(self):
+        message = json.dumps({ "command": ClientMessage.REQUEST_GAME.value })
+        self.socket.send_to_server(message)
 
     def process_socket_message(self, msg):
-        try:
-            message = json.loads(msg)
-        except JSONDecodeError:
-            return
+        messages = re.findall(r'({(.*?)})', msg)
+        for message in messages:
+            try:
+                message = json.loads(message[0])
+            except JSONDecodeError:
+                return
 
+            self.process_connection_messages(message)
+            self.process_scene_messages(message)
+            self.process_self_movement_messages(message)
+            self.process_opponent_movement_messages(message)
+            self.process_barrel_messages(message)
+            self.process_gorilla_messages(message)
+
+    def process_connection_messages(self, message):
         if message['command'] == ServerMessage.CONNECTION_ACK.value:
-            message = json.dumps({"command": ClientMessage.REQUEST_GAME.value})
-            self.socket.send_to_server(message)
-
-        elif message['command'] == ServerMessage.LOAD_SCENE.value:
-            self.player = Player(message['player'])
-            self.load_scene_signal.emit(message['scene'])
-
-        elif message['command'] == ServerMessage.MOVE_OPPONENT.value and isinstance(self.current_scene, GameScene):
-            self.current_scene.opponent.latest_direction = Direction(message['direction'])
-            self.current_scene.opponent.move_signal.emit(Direction(message['direction']))
-
-        elif message['command'] == ServerMessage.STOP_OPPONENT.value and isinstance(self.current_scene, GameScene):
-            self.current_scene.opponent.animation_reset_signal.emit(self.current_scene.opponent.latest_direction)
-
-        elif message['command'] == ServerMessage.FALL_OPPONENT.value and isinstance(self.current_scene, GameScene):
-            self.current_scene.opponent.fall_signal.emit()
-
-        elif message['command'] == ServerMessage.MOVE.value and isinstance(self.current_scene, GameScene):
-            self.current_scene.me.latest_direction = Direction(message['direction'])
-            self.current_scene.me.move_signal.emit(Direction(message['direction']))
-
-        elif message['command'] == ServerMessage.STOP.value and isinstance(self.current_scene, GameScene):
-            self.current_scene.me.animation_reset_signal.emit(self.current_scene.me.latest_direction)
-
-        elif message['command'] == ServerMessage.FALL.value and isinstance(self.current_scene, GameScene):
-            self.current_scene.me.fall_signal.emit()
-
-        elif message['command'] == ServerMessage.DRAW_BARREL.value and isinstance(self.current_scene, GameScene):
-            self.current_scene.barrel_pool[message['index']].item.setPos(message['x'], message['y'])
-            self.current_scene.barrel_pool[message['index']].draw_signal.emit()
-
-        elif message['command'] == ServerMessage.REMOVE_BARREL.value and isinstance(self.current_scene, GameScene):
-            self.current_scene.barrel_pool[message['index']].remove_signal.emit()
-
-        elif message['command'] == ServerMessage.MOVE_BARREL.value and isinstance(self.current_scene, GameScene):
-            self.current_scene.barrel_pool[message['index']].fall_signal.emit()
-
-        elif message['command'] == ServerMessage.HIT.value and isinstance(self.current_scene, GameScene):
-            self.current_scene.barrel_pool[message['index']].remove_signal.emit()
-            # TODO: lose life
-
-        elif message['command'] == ServerMessage.OPPONENT_HIT.value and isinstance(self.current_scene, GameScene):
-            self.current_scene.barrel_pool[message['index']].remove_signal.emit()
-            # TODO: lose life
-
+            self.socket.connection_established = True
         elif message['command'] == ServerMessage.MATCH_ENDED.value:
-            self.load_scene_signal.emit(Scene.MATCH_END.value)
+            self.load_info_scene_signal.emit(InfoScenes.MAIN_MENU.value)
 
-        elif message['command'] == ServerMessage.CLIMB_UP.value:
-            self.current_scene.me.climb_up_signal.emit(ClimbState(message['climb_state']))
+    def process_scene_messages(self, message):
+        if message['command'] == ServerMessage.LOAD_GAME_SCENE.value:
+            self.player = Player(message['player'])
+            self.load_game_scene_signal.emit(message['layout'], message['my_lives'], message['opponent_lives'])
+        elif message['command'] == ServerMessage.LOAD_INFO_SCENE.value:
+            self.load_info_scene_signal.emit(message['scene'])
 
-        elif message['command'] == ServerMessage.CLIMB_UP_OPPONENT.value:
-            self.current_scene.opponent.climb_up_signal.emit(ClimbState(message['climb_state']))
+    def process_self_movement_messages(self, message):
+        if isinstance(self.current_scene, GameScene):
+            if message['command'] == ServerMessage.MOVE.value:
+                self.current_scene.me.latest_direction = Direction(message['direction'])
+                self.current_scene.me.move_signal.emit(Direction(message['direction']))
+            elif message['command'] == ServerMessage.STOP.value:
+                self.current_scene.me.animation_reset_signal.emit(self.current_scene.me.latest_direction)
+            elif message['command'] == ServerMessage.FALL.value:
+                self.current_scene.me.fall_signal.emit()
+            elif message['command'] == ServerMessage.CLIMB_UP.value:
+                self.current_scene.me.climb_up_signal.emit(ClimbState(message['climb_state']))
+            elif message['command'] == ServerMessage.CLIMB_DOWN.value:
+                self.current_scene.me.climb_down_signal.emit(ClimbState(message['climb_state']))
+            elif message['command'] == ServerMessage.SET_POINTS.value:
+                self.current_scene.me.update_points_signal.emit(message['points'])
+            elif message['command'] == ServerMessage.SET_POINTS_OPPONENT.value:
+                self.current_scene.opponent.update_points_signal.emit(message['points'])
 
-        elif message['command'] == ServerMessage.CLIMB_DOWN.value:
-            self.current_scene.me.climb_down_signal.emit(ClimbState(message['climb_state']))
+    def process_opponent_movement_messages(self, message):
+        if isinstance(self.current_scene, GameScene):
+            if message['command'] == ServerMessage.MOVE_OPPONENT.value:
+                self.current_scene.opponent.latest_direction = Direction(message['direction'])
+                self.current_scene.opponent.move_signal.emit(Direction(message['direction']))
+            elif message['command'] == ServerMessage.STOP_OPPONENT.value:
+                self.current_scene.opponent.animation_reset_signal.emit(self.current_scene.opponent.latest_direction)
+            elif message['command'] == ServerMessage.FALL_OPPONENT.value:
+                self.current_scene.opponent.fall_signal.emit()
+            elif message['command'] == ServerMessage.CLIMB_UP_OPPONENT.value:
+                self.current_scene.opponent.climb_up_signal.emit(ClimbState(message['climb_state']))
+            elif message['command'] == ServerMessage.CLIMB_DOWN_OPPONENT.value:
+                self.current_scene.opponent.climb_down_signal.emit(ClimbState(message['climb_state']))
 
-        elif message['command'] == ServerMessage.CLIMB_DOWN_OPPONENT.value:
-            self.current_scene.opponent.climb_down_signal.emit(ClimbState(message['climb_state']))
+    def process_barrel_messages(self, message):
+        if isinstance(self.current_scene, GameScene):
+            if message['command'] == ServerMessage.DRAW_BARREL.value:
+                self.current_scene.barrel_pool[message['index']].item.setPos(message['x'], message['y'])
+                self.current_scene.barrel_pool[message['index']].draw_signal.emit()
+            elif message['command'] == ServerMessage.REMOVE_BARREL.value:
+                self.current_scene.barrel_pool[message['index']].remove_signal.emit()
+            elif message['command'] == ServerMessage.MOVE_BARREL.value:
+                self.current_scene.barrel_pool[message['index']].fall_signal.emit()
+            elif message['command'] == ServerMessage.HIT.value:
+                self.current_scene.barrel_pool[message['index']].remove_signal.emit()
+                self.current_scene.me.set_lives_signal.emit(message['lives'])
+            elif message['command'] == ServerMessage.OPPONENT_HIT.value:
+                self.current_scene.barrel_pool[message['index']].remove_signal.emit()
+                self.current_scene.opponent.set_lives_signal.emit(message['lives'])
 
-    def load_scene(self, index):
+    def process_gorilla_messages(self, message):
+        if isinstance(self.current_scene, GameScene):
+            if message['command'] == ServerMessage.GORILLA_MOVE.value:
+                self.current_scene.gorilla.move_signal.emit(Direction(message['direction']))
+
+            if message['command'] == ServerMessage.GORILLA_THROW_BARREL.value:
+                self.current_scene.gorilla.throw_start_signal.emit()
+                self.current_scene.barrel_pool[message['index']].item.setPos(message['x'], message['y'])
+                self.current_scene.barrel_pool[message['index']].draw_signal.emit()
+
+    def load_game_scene(self, layout, my_lives, opponent_lives):
+        if not isinstance(self.current_scene, GameScene):
+            self.current_scene = GameScene(self, self.player)
+            self.view.setScene(self.current_scene)
+
+        if layout == 1:
+            self.current_scene.load_layout_and_start(Layouts.FirstLevel.value)
+        elif layout == 2:
+            self.current_scene.load_layout_and_start(Layouts.SecondLevel.value)
+        elif layout == 3:
+            self.current_scene.load_layout_and_start(Layouts.ThirdLevel.value)
+        elif layout == 4:
+            self.current_scene.load_layout_and_start(Layouts.FourthLevel.value)
+        elif layout == 5:
+            self.current_scene.load_layout_and_start(Layouts.FifthLevel.value)
+
+        self.current_scene.set_lives(my_lives, opponent_lives)
+        self.current_scene.draw_lives()
+        self.current_scene.draw_points()
+
+        message = json.dumps({ "command": ClientMessage.READY.value })
+        self.socket.send_to_server(message)
+
+    def load_info_scene(self, scene):
         self.cleanup_scene()
-        if index == Scene.MAIN_MENU.value:
+        if scene == InfoScenes.MAIN_MENU.value:
             self.current_scene = MainMenu(self)
-        elif index == Scene.WAITING_FOR_PLAYERS.value:
+        elif scene == InfoScenes.WAITING_FOR_PLAYERS.value:
             self.current_scene = WaitingForPlayers(self)
-        elif index == Scene.FIRST_LEVEL.value:
-            self.current_scene = FirstLevel(self, self.player)
-        elif index == Scene.MATCH_END.value:
+        elif scene == InfoScenes.MATCH_END.value:
             self.current_scene = MatchEnd(self)
 
         self.view.setScene(self.current_scene)

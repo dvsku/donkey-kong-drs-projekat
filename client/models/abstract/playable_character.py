@@ -1,25 +1,42 @@
-from PyQt5.QtCore import QObject, pyqtSignal
-from PyQt5.QtWidgets import QGraphicsPixmapItem
+from PyQt5.QtCore import QObject, pyqtSignal, Qt
+from PyQt5.QtGui import QPixmap, QFont
+from PyQt5.QtWidgets import QGraphicsPixmapItem, QGraphicsTextItem
 
+from client.constants import IMAGES_DIR
 from common.enums.climb_state import ClimbState
 from common.enums.direction import Direction
 
 
 class PlayableCharacter(QObject):
-    lose_life_signal = pyqtSignal()
+    set_lives_signal = pyqtSignal(int)
     move_signal = pyqtSignal(Direction)
     animation_reset_signal = pyqtSignal(Direction)
     fall_signal = pyqtSignal()
     climb_up_signal = pyqtSignal(ClimbState)
     climb_down_signal = pyqtSignal(ClimbState)
+    remove_signal = pyqtSignal()
+    update_points_signal = pyqtSignal(int)
 
     def __init__(self, parent):
         super().__init__()
         self.__parent__ = parent
         self.item = QGraphicsPixmapItem()
+        self.lives = QGraphicsPixmapItem()
+        self.lives.setPixmap(QPixmap(IMAGES_DIR + "lives/3zivota.png"))
+        self.lives_remaining = 0
+
+        self.font = QFont()
+        self.font.setPointSize(12)
+        self.points = QGraphicsTextItem("0")
+        self.points.setDefaultTextColor(Qt.white)
+        self.points.setFont(self.font)
+
         self.falling = False
         self.climbing = False
         self.alive = True
+
+        self.starting_x = 0
+        self.starting_y = 0
 
         self.action_keys = []
         self.keys_pressed = set()
@@ -39,7 +56,12 @@ class PlayableCharacter(QObject):
         self.fall_signal.connect(self.fall)
         self.climb_up_signal[ClimbState].connect(self.climb_up)
         self.climb_down_signal[ClimbState].connect(self.climb_down)
-        self.lose_life_signal.connect(self.lose_life)
+        self.set_lives_signal[int].connect(self.set_lives)
+        self.update_points_signal[int].connect(self.update_points)
+
+    def update_points(self, points: int):
+        self.points.setPlainText(str(points))
+        self.__parent__.set_points_position()
 
     def animate(self, direction: Direction, state=False):
         count = -1
@@ -125,5 +147,19 @@ class PlayableCharacter(QObject):
     def fall(self):
         self.item.moveBy(0, 5)
 
-    def lose_life(self):
-        pass
+    def set_lives(self, lives: int):
+        self.lives_remaining = lives
+        if self.lives_remaining == 3:
+            self.lives.setPixmap(QPixmap(IMAGES_DIR + "lives/3zivota.png"))
+        elif self.lives_remaining == 2:
+            self.lives.setPixmap(QPixmap(IMAGES_DIR + "lives/2zivota.png"))
+        elif self.lives_remaining == 1:
+            self.lives.setPixmap(QPixmap(IMAGES_DIR + "lives/1zivot.png"))
+        elif self.lives_remaining == 0:
+            self.lives.setPixmap(QPixmap(IMAGES_DIR + "lives/0zivota.png"))
+            self.alive = False
+
+        if self.alive:
+            self.item.setPos(self.starting_x, self.starting_y)
+        else:
+            self.__parent__.removeItem(self.item)
