@@ -457,6 +457,9 @@ class Match:
         if self.coin_thread.isAlive() and threading.current_thread() != self.coin_thread:
             self.coin_thread.join()
 
+        for player in self.players:
+            player.points = 0
+
         self.cc_endpoint.send(Message(CCMethods.KILL_PROCESS))
         if self.__parent__.matches.__contains__(self):
             self.__parent__.matches.remove(self)

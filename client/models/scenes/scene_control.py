@@ -64,8 +64,6 @@ class SceneControl(QObject):
 
         message = json.dumps({ "command": ClientMessage.REQUEST_GAME.value })
         self.socket.send_to_server(message)
-        self.my_score = 0
-        self.opponent_score = 0
 
     """ Handles server messages """
     def process_socket_message(self, msg):
@@ -225,6 +223,8 @@ class SceneControl(QObject):
             self.current_scene = MatchEnd(self)
 
         self.view.setScene(self.current_scene)
+        self.my_score = 0
+        self.opponent_score = 0
 
     """ Stops running threads """
     def __cleanup_scene(self):
