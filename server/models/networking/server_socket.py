@@ -3,9 +3,9 @@ from threading import Thread
 
 
 class ServerSocket:
-    def __init__(self, parent, port):
+    def __init__(self, parent, ip_address, port):
         self.__parent__ = parent
-        self.ip_address = "127.0.0.1"
+        self.ip_address = ip_address
         self.port = port
         self.socket = None
         self.thread = Thread(target=self.__do_work)
