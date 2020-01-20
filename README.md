@@ -10,6 +10,8 @@
 # Networked Versus Donkey Kong
 > An online multiplayer game inspired by Donkey Kong Classic.
 
+> Built using PyQt5 and native sockets library.
+
 ## Prerequisites
   python 3.6<br/>
   numpy 1.17.4<br/>
