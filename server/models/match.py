@@ -39,8 +39,6 @@ class Match:
         self.cc_endpoint = self.__add_cc_endpoint()
         self.level_layout = None
         self.barrel_speed = 0.03
-
-        self.barrel_draw_y = 80
         self.barrels = np.array([Barrel(i) for i in range(BARREL_POOL_SIZE)])
 
         self.players_falling_thread = Thread(target=self.__players_falling_thread_do_work)
@@ -97,7 +95,7 @@ class Match:
             player.send(msg)
 
     """ Sends a message to the opponent """
-    def send_to_opponent(self, msg, player):
+    def send_to_opponent(self, msg, player: Client):
         for p in self.players:
             if p != player:
                 p.send(msg)
@@ -112,7 +110,7 @@ class Match:
         self.__end()
 
     """ Checks if a player can move in the desired direction. """
-    def move(self, player, direction):
+    def move(self, player: Client, direction: Direction):
         player.latest_direction = direction
         if direction == Direction.LEFT:
             self.cc_endpoint.send(Message(CCMethods.END_OF_SCREEN_L, player.x))

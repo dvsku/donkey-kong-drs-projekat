@@ -17,9 +17,6 @@ class CollisionControl(mp.Process):
         self.server_endpoint = endpoint
         self.endpoints = []
         self.threads = []
-
-        # self.send_queue = send_queue
-        # self.recv_queue = recv_queue
         self.start()
 
     def add_endpoint(self, pipe_endpoint):
