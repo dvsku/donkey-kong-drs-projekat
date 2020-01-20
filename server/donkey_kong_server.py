@@ -16,8 +16,19 @@ from server.models.networking.client import Client
 from server.models.networking.server_socket import ServerSocket
 
 class Server:
+    def __init__(self, args):
+        if len(args) != 2:
+            print("Error: no port provided.")
+            print("Usage: python donkey_kong.py port")
+            sys.exit()
 
-    def __init__(self):
+        try:
+            port = int(args[1])
+        except ValueError:
+            print("Error: port has to be a number")
+            sys.exit()
+
+
         atexit.register(self.__cleanup)
         self.kill_thread = False
         self.clients = []
@@ -26,7 +37,7 @@ class Server:
         self.cc_endpoint = None
         self.__setup_collision_control()
 
-        self.server_socket = ServerSocket(self)
+        self.server_socket = ServerSocket(self, port)
 
     """ Creates a client instance when connection has been established """
     def process_connection_established(self, msg, socket):
@@ -150,4 +161,4 @@ class Server:
 from server.models.match import Match
 
 if __name__ == '__main__':
-    Server()
+    Server(sys.argv)

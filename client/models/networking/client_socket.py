@@ -6,9 +6,11 @@ from common.enums.info_scenes import InfoScenes
 
 
 class ClientSocket:
-    def __init__(self, parent):
+    def __init__(self, parent, ip_address, port):
         self.__parent__ = parent
         self.socket = None
+        self.ip_address = ip_address
+        self.port = port
         self.kill_thread = False
         self.thread = Thread(target=self.__do_work)
         self.establish_connection()
@@ -17,7 +19,7 @@ class ClientSocket:
     """ Connects to the server """
     def establish_connection(self):
         self.socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)
-        self.socket.connect((gethostname(), 1234))
+        self.socket.connect((self.ip_address, self.port))
         self.socket.settimeout(2)
         message = json.dumps({ "command": ClientMessage.CONNECTION_ESTABLISHED.value })
         self.send_to_server(message)

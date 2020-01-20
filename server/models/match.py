@@ -370,7 +370,7 @@ class Match:
 
     """ Checks if both players are dead """
     def __check_end_match(self) -> bool:
-        if self.players[0].lives == 0 and self.players[1].lives == 0:
+        if self.players[0].lives <= 0 and self.players[1].lives <= 0:
             return True
         return False
 

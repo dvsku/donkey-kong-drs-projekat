@@ -125,11 +125,14 @@ class GameScene(QGraphicsScene):
 
     """ Checks if keyboard keys are pressed and sends movement requests to the server """
     def __move_thread_do_work(self):
+        moving = False
         while not self.kill_thread:
             if len(self.me.keys_pressed) != 0:
                 self.__move_self()
+                moving = True
             else:
-                if self.me.latest_direction is not None:
+                if self.me.latest_direction is not None and moving is True:
+                    moving = True
                     self.me.animation_reset_signal.emit(self.me.latest_direction)
                     message = json.dumps({"command": ClientMessage.STOP.value})
                     self.__parent__.socket.send_to_server(message)

@@ -3,8 +3,10 @@ from threading import Thread
 
 
 class ServerSocket:
-    def __init__(self, parent):
+    def __init__(self, parent, port):
         self.__parent__ = parent
+        self.ip_address = "127.0.0.1"
+        self.port = port
         self.socket = None
         self.thread = Thread(target=self.__do_work)
         self.__setup_socket()
@@ -12,8 +14,9 @@ class ServerSocket:
 
     def __setup_socket(self):
         self.socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)
-        self.socket.bind((gethostname(), 1234))
+        self.socket.bind((self.ip_address, self.port))
         self.socket.listen(5)
+        print(f"server listening on {self.ip_address}:{self.port}")
 
     def __do_work(self):
         while True:

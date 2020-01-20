@@ -24,9 +24,11 @@ class SceneControl(QObject):
     load_game_scene_signal = pyqtSignal(int, int, int)
     load_info_scene_signal = pyqtSignal(int)
 
-    def __init__(self, parent):
+    def __init__(self, parent, ip_address, port):
         super().__init__()
         self.__parent__ = parent
+        self.ip_address = ip_address
+        self.port = port
         self.current_scene = None
         self.player = None
         self.my_score = 0
@@ -46,7 +48,7 @@ class SceneControl(QObject):
     """ Tries to connect to server """
     def setup_socket(self):
         try:
-            self.socket = ClientSocket(self)
+            self.socket = ClientSocket(self, self.ip_address, self.port)
         except ConnectionError:
             print("Could not connect to server.")
             sys.exit()

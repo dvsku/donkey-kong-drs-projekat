@@ -147,6 +147,7 @@ class PlayableCharacter(QObject):
         if climb_state == ClimbState.CLIMB:
             self.climbing = True
             self.__animate(Direction.UP)
+            self.latest_direction = Direction.UP
             self.item.moveBy(0, -5)
         elif climb_state == ClimbState.FINISH:
             self.climbing = True
